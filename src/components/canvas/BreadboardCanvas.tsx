@@ -14,6 +14,9 @@ export const BreadboardCanvas: React.FC = () => {
     activeExpId,
     currentStepIndex,
     setActiveHole,
+    isProbeMode,
+    probedNet,
+    probeHole,
   } = useCircuitStore();
 
   const activeExp = experiments.find((e) => e.id === activeExpId);
@@ -245,6 +248,45 @@ export const BreadboardCanvas: React.FC = () => {
           ctx.fill();
           ctx.restore();
         }
+      }
+
+      // -------------------------------------------------------------
+      // 5b. PROBED ELECTRICAL NET TRACE & RETICLE
+      // -------------------------------------------------------------
+      if (probedNet) {
+        ctx.save();
+        // Trace all connected holes on this electrical net
+        for (const hId of probedNet.connectedHoles) {
+          const h = defaultGrid.getHole(hId);
+          if (!h) continue;
+          ctx.fillStyle = probedNet.isShort ? 'rgba(239, 68, 68, 0.45)' : 'rgba(255, 255, 255, 0.35)';
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Crosshair reticle on the specific probed hole
+        const targetHole = defaultGrid.getHole(probedNet.holeId);
+        if (targetHole) {
+          ctx.strokeStyle = probedNet.isShort ? '#ef4444' : '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(targetHole.x, targetHole.y, 16, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Reticle tick crosshairs
+          ctx.beginPath();
+          ctx.moveTo(targetHole.x - 22, targetHole.y);
+          ctx.lineTo(targetHole.x - 12, targetHole.y);
+          ctx.moveTo(targetHole.x + 12, targetHole.y);
+          ctx.lineTo(targetHole.x + 22, targetHole.y);
+          ctx.moveTo(targetHole.x, targetHole.y - 22);
+          ctx.lineTo(targetHole.x, targetHole.y - 12);
+          ctx.moveTo(targetHole.x, targetHole.y + 12);
+          ctx.lineTo(targetHole.x, targetHole.y + 22);
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
       // -------------------------------------------------------------
@@ -520,6 +562,9 @@ export const BreadboardCanvas: React.FC = () => {
 
           const nearest = defaultGrid.findNearestHole(worldX, worldY, 15);
           setActiveHole(nearest ? nearest.id : null);
+          if (nearest) {
+            probeHole(nearest.id);
+          }
         }
       }
     }
@@ -546,7 +591,7 @@ export const BreadboardCanvas: React.FC = () => {
     <div className="relative w-full h-full overflow-hidden bg-black touch-none">
       <canvas
         ref={canvasRef}
-        className="w-full h-full block cursor-default"
+        className={`w-full h-full block ${isProbeMode ? 'cursor-crosshair' : 'cursor-default'}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

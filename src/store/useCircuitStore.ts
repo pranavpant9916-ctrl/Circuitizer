@@ -27,6 +27,19 @@ export interface WaveformPoint {
   q1?: 0 | 1;
 }
 
+export interface ProbedNetInfo {
+  holeId: string;
+  section: string;
+  row: number;
+  col?: string;
+  netId: string;
+  connectedHoles: string[];
+  logicLevel: LogicLevel;
+  voltageText: string;
+  connectedComponents: string[];
+  isShort: boolean;
+}
+
 interface CircuitStoreState {
   // Navigation / Experiment
   experiments: Experiment[];
@@ -42,6 +55,10 @@ interface CircuitStoreState {
     signalTraffic: boolean;
   };
   activeMode: 'GUIDE' | 'SCAN_CAMERA';
+
+  // Interactive Probe Mode
+  isProbeMode: boolean;
+  probedNet: ProbedNetInfo | null;
 
   // Physical Circuit State
   circuitState: CircuitState;
@@ -71,6 +88,10 @@ interface CircuitStoreState {
   stepClock: () => void;
   setClockHz: (hz: number) => void;
   runSimTick: () => void;
+
+  // Probe actions
+  toggleProbeMode: () => void;
+  probeHole: (holeId: string | null) => void;
 }
 
 export const useCircuitStore = create<CircuitStoreState>((set, get) => {
@@ -127,6 +148,9 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     },
 
     activeMode: 'GUIDE',
+
+    isProbeMode: false,
+    probedNet: null,
 
     circuitState: initialCircuit,
 
@@ -273,6 +297,80 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
         isDeadShort: result.isDeadShort,
         waveforms: updatedWaveforms,
       });
+    },
+
+    toggleProbeMode: () => {
+      const next = !get().isProbeMode;
+      set({
+        isProbeMode: next,
+        probedNet: next ? get().probedNet : null,
+      });
+    },
+
+    probeHole: (holeId: string | null) => {
+      if (!holeId) {
+        set({ probedNet: null });
+        return;
+      }
+      const hole = defaultGrid.getHole(holeId);
+      if (!hole) return;
+
+      const { circuitState } = get();
+      const result = netlistEngine.solve(circuitState);
+      const netId = result.holeNetMap.get(holeId) || hole.busId;
+      const net = result.nets.get(netId);
+
+      const connectedComponents: string[] = [];
+      // Check IC pins
+      for (const ic of circuitState.placedICs) {
+        for (const [pinStr, hId] of Object.entries(ic.pinHoles)) {
+          if (hId === holeId) {
+            connectedComponents.push(`IC ${ic.model} Pin ${pinStr}`);
+          }
+        }
+      }
+      // Check Resistors
+      for (const res of circuitState.resistors) {
+        if (res.fromHole === holeId || res.toHole === holeId) {
+          connectedComponents.push(`Resistor ${res.valueOhms}Ω`);
+        }
+      }
+      // Check LEDs
+      for (const led of circuitState.leds) {
+        if (led.anodeHole === holeId) connectedComponents.push('LED Anode (+)');
+        if (led.cathodeHole === holeId) connectedComponents.push('LED Cathode (-)');
+      }
+      // Check Switches
+      for (const sw of circuitState.switches) {
+        if (sw.holeA === holeId || sw.holeB === holeId) {
+          connectedComponents.push(`Switch ${sw.label}`);
+        }
+      }
+
+      const level = net ? net.level : 'Z';
+      const isShort = net ? net.isShortCircuit : false;
+      const voltageText = isShort
+        ? '0.00 V (DEAD SHORT)'
+        : level === 1
+        ? '+5.00 V (HIGH)'
+        : level === 0
+        ? '0.00 V (GND)'
+        : 'Floating (High-Z)';
+
+      const probed: ProbedNetInfo = {
+        holeId,
+        section: hole.section,
+        row: hole.row,
+        col: hole.col,
+        netId,
+        connectedHoles: net ? Array.from(net.holes) : [holeId],
+        logicLevel: level,
+        voltageText,
+        connectedComponents,
+        isShort,
+      };
+
+      set({ probedNet: probed });
     },
   };
 });

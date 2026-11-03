@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
-import { Eye, Layers, LocateFixed, Minus, Plus, Zap } from 'lucide-react';
+import { Eye, Gauge, Layers, LocateFixed, Minus, Plus, Zap } from 'lucide-react';
 
 export const FloatingControls: React.FC = () => {
   const {
@@ -8,6 +8,8 @@ export const FloatingControls: React.FC = () => {
     setViewport,
     layers,
     toggleLayer,
+    isProbeMode,
+    toggleProbeMode,
   } = useCircuitStore();
 
   const [showLayerMenu, setShowLayerMenu] = useState(false);
@@ -96,6 +98,17 @@ export const FloatingControls: React.FC = () => {
 
       {/* Floating Action Button Pill */}
       <div className="flex flex-col gap-1.5 bg-[#0d0f14]/85 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl">
+        {/* Toggle Probe Mode */}
+        <button
+          onClick={toggleProbeMode}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+            isProbeMode ? 'bg-white text-black shadow-md' : 'text-obsidian-300 hover:bg-white/10 hover:text-white'
+          }`}
+          title="Multimeter / Logic Probe"
+        >
+          <Gauge className="w-4 h-4" />
+        </button>
+
         {/* Toggle Layers */}
         <button
           onClick={() => setShowLayerMenu(!showLayerMenu)}
