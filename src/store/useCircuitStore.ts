@@ -9,6 +9,7 @@ import {
   PlacedIC,
   PlacedLED,
   PlacedResistor,
+  PlacedSegmentDisplay,
   PlacedSwitch,
 } from '../types/circuit';
 import { Experiment } from '../types/experiment';
@@ -82,6 +83,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     const resistors: PlacedResistor[] = [];
     const leds: PlacedLED[] = [];
     const switches: PlacedSwitch[] = [];
+    const segmentDisplays: PlacedSegmentDisplay[] = [];
 
     for (let i = 0; i <= upToStepIdx && i < exp.steps.length; i++) {
       const step = exp.steps[i];
@@ -90,6 +92,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       if (step.resistorToAdd) resistors.push(step.resistorToAdd);
       if (step.ledToAdd) leds.push(step.ledToAdd);
       if (step.switchToAdd) switches.push(step.switchToAdd);
+      if (step.segmentDisplayToAdd) segmentDisplays.push(step.segmentDisplayToAdd);
     }
 
     return {
@@ -98,6 +101,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       resistors,
       leds,
       switches,
+      segmentDisplays,
       clockSignals: {},
     };
   };

@@ -233,4 +233,28 @@ export const IC_REGISTRY: Record<string, ICDefinition> = {
       };
     },
   },
+
+  'NE555': {
+    model: 'NE555',
+    name: 'Precision Timer (Astable & Monostable Clock Generator)',
+    pinCount: 8,
+    pins: [
+      { pinNumber: 1, name: 'GND', type: 'POWER_GND', description: 'Ground (0V)' },
+      { pinNumber: 2, name: 'TRIG', type: 'INPUT', description: 'Trigger comparator (< 1/3 VCC starts pulse)' },
+      { pinNumber: 3, name: 'OUT', type: 'OUTPUT', description: 'High-current output pulse' },
+      { pinNumber: 4, name: 'RESET', type: 'INPUT', description: 'Active-low reset (tie to VCC if unused)' },
+      { pinNumber: 5, name: 'CTRL', type: 'INPUT', description: 'Control voltage (2/3 VCC bypass)' },
+      { pinNumber: 6, name: 'THRESH', type: 'INPUT', description: 'Threshold comparator (> 2/3 VCC resets pulse)' },
+      { pinNumber: 7, name: 'DISCH', type: 'OUTPUT', description: 'Discharge open-collector to ground' },
+      { pinNumber: 8, name: 'VCC', type: 'POWER_VCC', description: 'Supply Voltage (+5V to +15V)' },
+    ],
+    evaluate: (inputs) => {
+      // If RESET (Pin 4) is pulled LOW (0), output is forced LOW
+      if (inputs[4] === 0) {
+        return { 3: 0, 7: 0 };
+      }
+      // In astable multivibrator mode, Pin 3 alternates according to oscillation
+      return { 3: 1, 7: 1 };
+    },
+  },
 };

@@ -1,23 +1,10 @@
 import { BreadboardGridSystem } from './grid';
 import { IC_REGISTRY } from './icRegistry';
 import {
+  CircuitState,
   ElectricalNet,
-  JumperWire,
   LogicLevel,
-  PlacedIC,
-  PlacedLED,
-  PlacedResistor,
-  PlacedSwitch,
 } from '../types/circuit';
-
-export interface CircuitState {
-  placedICs: PlacedIC[];
-  wires: JumperWire[];
-  resistors: PlacedResistor[];
-  leds: PlacedLED[];
-  switches: PlacedSwitch[];
-  clockSignals: Record<string, 0 | 1>; // Clock sources e.g. "NET_CLK" -> 0 or 1
-}
 
 export class NetlistEngine {
   private grid: BreadboardGridSystem;
@@ -215,6 +202,30 @@ export class NetlistEngine {
       const isLit = !isDeadShort && anodeLevel === 1 && cathodeLevel === 0;
       ledStates[led.id] = isLit;
       led.isLit = isLit;
+    }
+
+    // 6. Evaluate 7-Segment Displays (Common Cathode grounded, segments driven HIGH)
+    if (circuit.segmentDisplays) {
+      for (const segDisp of circuit.segmentDisplays) {
+        const cathodeGrounded = segDisp.commonCathodeHoles.some((hId: string) => {
+          const netId = holeNetMap.get(hId);
+          return netId ? nets.get(netId)?.level === 0 : false;
+        });
+
+        const segmentKeys: Array<'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'dp'> = [
+          'a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'
+        ];
+        for (const seg of segmentKeys) {
+          const pinHole = segDisp.segmentPins[seg];
+          if (pinHole) {
+            const netId = holeNetMap.get(pinHole);
+            const isHigh = netId ? nets.get(netId)?.level === 1 : false;
+            segDisp.litSegments[seg] = !isDeadShort && cathodeGrounded && isHigh;
+          } else {
+            segDisp.litSegments[seg] = false;
+          }
+        }
+      }
     }
 
     return {

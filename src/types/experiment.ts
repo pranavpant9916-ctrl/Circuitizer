@@ -1,4 +1,4 @@
-import { JumperWire, PlacedIC, PlacedLED, PlacedResistor, PlacedSwitch } from './circuit';
+import { JumperWire, PlacedIC, PlacedLED, PlacedResistor, PlacedSegmentDisplay, PlacedSwitch } from './circuit';
 
 export interface ApparatusItem {
   id: string;
@@ -20,6 +20,7 @@ export interface NavigationStep {
   resistorToAdd?: PlacedResistor;
   ledToAdd?: PlacedLED;
   switchToAdd?: PlacedSwitch;
+  segmentDisplayToAdd?: PlacedSegmentDisplay;
 }
 
 export interface Experiment {

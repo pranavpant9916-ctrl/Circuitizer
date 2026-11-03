@@ -61,12 +61,21 @@ export interface PlacedSwitch {
   label: string;
 }
 
+export interface PlacedSegmentDisplay {
+  id: string;
+  startRow: number;
+  segmentPins: Record<'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'dp', string>;
+  commonCathodeHoles: string[];
+  litSegments: Record<'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'dp', boolean>;
+}
+
 export interface CircuitState {
   placedICs: PlacedIC[];
   wires: JumperWire[];
   resistors: PlacedResistor[];
   leds: PlacedLED[];
   switches: PlacedSwitch[];
+  segmentDisplays?: PlacedSegmentDisplay[];
   clockSignals: Record<string, 0 | 1>;
 }
 

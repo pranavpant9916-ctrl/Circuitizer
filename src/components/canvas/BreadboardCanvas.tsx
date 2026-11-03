@@ -253,12 +253,14 @@ export const BreadboardCanvas: React.FC = () => {
       if (layers.realistic) {
         // A. Draw ICs (Obsidian Charcoal Package)
         for (const ic of circuitState.placedICs) {
+          const totalPins = Object.keys(ic.pinHoles).length;
+          const bottomPinsCount = Math.floor(totalPins / 2);
           const pin1Hole = defaultGrid.getHole(ic.pinHoles[1]);
-          const pin7Hole = defaultGrid.getHole(ic.pinHoles[7]);
-          if (!pin1Hole || !pin7Hole) continue;
+          const lastBottomHole = defaultGrid.getHole(ic.pinHoles[bottomPinsCount]);
+          if (!pin1Hole || !lastBottomHole) continue;
 
           const icX = pin1Hole.x - 12;
-          const icW = (pin7Hole.x - pin1Hole.x) + 24;
+          const icW = (lastBottomHole.x - pin1Hole.x) + 24;
           const icY = 212;
           const icH = 28;
 
@@ -287,16 +289,71 @@ export const BreadboardCanvas: React.FC = () => {
           ctx.fillStyle = '#cfd3dd';
           ctx.font = 'bold 9px "JetBrains Mono", monospace';
           ctx.textAlign = 'center';
-          ctx.fillText(`SN${ic.model}N`, icX + icW / 2, icY + icH / 2 + 3);
+          const label = ic.model.startsWith('NE') ? ic.model : `SN${ic.model}N`;
+          ctx.fillText(label, icX + icW / 2, icY + icH / 2 + 3);
 
           // Metallic Pins
           for (const [pinNumStr, hId] of Object.entries(ic.pinHoles)) {
             const h = defaultGrid.getHole(String(hId));
             if (!h) continue;
             ctx.fillStyle = '#a3a9b7';
-            const isTop = Number(pinNumStr) > 7;
+            const isTop = Number(pinNumStr) > bottomPinsCount;
             const py = isTop ? icY - 5 : icY + icH;
             ctx.fillRect(h.x - 2, py, 4, 5);
+          }
+        }
+
+        // B. Draw 7-Segment Displays
+        if (circuitState.segmentDisplays) {
+          for (const segDisp of circuitState.segmentDisplays) {
+            const holeA = defaultGrid.getHole(segDisp.segmentPins.a);
+            if (!holeA) continue;
+
+            const dispX = holeA.x - 24;
+            const dispY = 195;
+            const dispW = 76;
+            const dispH = 62;
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = '#0a0c10';
+            ctx.beginPath();
+            ctx.roundRect(dispX, dispY, dispW, dispH, 6);
+            ctx.fill();
+
+            ctx.strokeStyle = '#222631';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+
+            const cx = dispX + dispW / 2;
+            const cy = dispY + dispH / 2;
+
+            const drawSegment = (segKey: 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'dp', x: number, y: number, w: number, h: number) => {
+              const isOn = segDisp.litSegments[segKey];
+              ctx.save();
+              if (isOn) {
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#ffffff';
+              } else {
+                ctx.fillStyle = '#171a22';
+              }
+              ctx.beginPath();
+              ctx.roundRect(x, y, w, h, 2);
+              ctx.fill();
+              ctx.restore();
+            };
+
+            drawSegment('a', cx - 12, cy - 20, 24, 4);
+            drawSegment('b', cx + 10, cy - 18, 4, 16);
+            drawSegment('c', cx + 10, cy + 2, 4, 16);
+            drawSegment('d', cx - 12, cy + 16, 24, 4);
+            drawSegment('e', cx - 14, cy + 2, 4, 16);
+            drawSegment('f', cx - 14, cy - 18, 4, 16);
+            drawSegment('g', cx - 12, cy - 2, 24, 4);
+            drawSegment('dp', cx + 18, cy + 16, 4, 4);
           }
         }
 
