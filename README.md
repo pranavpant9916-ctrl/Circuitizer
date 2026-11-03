@@ -6,7 +6,6 @@
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -113,19 +112,3 @@ npm run build
 npm run preview
 ```
 
----
-
-## Roadmap
-
-- [x] **Phase 1**: Mobile foundation, stationary 830-point canvas, obsidian design system, and core discrete simulation engine.
-- [ ] **Phase 2**: Component expansion (IC 7400 NAND, IC 7402 NOR, NE555 Timer, and 7-Segment Display).
-- [ ] **Phase 3**: Floating interactive Multimeter / Logic Probe mode.
-- [ ] **Phase 4**: 1-click printable PDF Lab Record and Viva-Voce question generator.
-- [ ] **Phase 5**: Free-form sandbox wiring editor.
-- [ ] **Phase 6**: On-device client-side YOLOv8 inference with ONNX Runtime Web.
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
