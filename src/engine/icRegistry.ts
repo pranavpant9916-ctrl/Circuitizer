@@ -163,4 +163,74 @@ export const IC_REGISTRY: Record<string, ICDefinition> = {
       { pinNumber: 16, name: '1K', type: 'INPUT', description: 'FF1 K Input' },
     ],
   },
+
+  '7400': {
+    model: '7400',
+    name: 'Quad 2-Input NAND Gate (Universal Gate)',
+    pinCount: 14,
+    pins: [
+      { pinNumber: 1, name: '1A', type: 'INPUT', description: 'Gate 1 Input A' },
+      { pinNumber: 2, name: '1B', type: 'INPUT', description: 'Gate 1 Input B' },
+      { pinNumber: 3, name: '1Y', type: 'OUTPUT', description: 'Gate 1 Output (NAND)' },
+      { pinNumber: 4, name: '2A', type: 'INPUT', description: 'Gate 2 Input A' },
+      { pinNumber: 5, name: '2B', type: 'INPUT', description: 'Gate 2 Input B' },
+      { pinNumber: 6, name: '2Y', type: 'OUTPUT', description: 'Gate 2 Output (NAND)' },
+      { pinNumber: 7, name: 'GND', type: 'POWER_GND', description: 'Ground (0V)' },
+      { pinNumber: 8, name: '3Y', type: 'OUTPUT', description: 'Gate 3 Output (NAND)' },
+      { pinNumber: 9, name: '3A', type: 'INPUT', description: 'Gate 3 Input A' },
+      { pinNumber: 10, name: '3B', type: 'INPUT', description: 'Gate 3 Input B' },
+      { pinNumber: 11, name: '4Y', type: 'OUTPUT', description: 'Gate 4 Output (NAND)' },
+      { pinNumber: 12, name: '4A', type: 'INPUT', description: 'Gate 4 Input A' },
+      { pinNumber: 13, name: '4B', type: 'INPUT', description: 'Gate 4 Input B' },
+      { pinNumber: 14, name: 'VCC', type: 'POWER_VCC', description: 'Supply Voltage (+5V)' },
+    ],
+    evaluate: (inputs) => {
+      const nand = (a?: LogicLevel, b?: LogicLevel): LogicLevel => {
+        if (a === 0 || b === 0) return 1;
+        if (a === 1 && b === 1) return 0;
+        return 'X';
+      };
+      return {
+        3: nand(inputs[1], inputs[2]),
+        6: nand(inputs[4], inputs[5]),
+        8: nand(inputs[9], inputs[10]),
+        11: nand(inputs[12], inputs[13]),
+      };
+    },
+  },
+
+  '7402': {
+    model: '7402',
+    name: 'Quad 2-Input NOR Gate (Universal Gate)',
+    pinCount: 14,
+    pins: [
+      { pinNumber: 1, name: '1Y', type: 'OUTPUT', description: 'Gate 1 Output (NOR) - Note: Pin 1 is OUTPUT!' },
+      { pinNumber: 2, name: '1A', type: 'INPUT', description: 'Gate 1 Input A' },
+      { pinNumber: 3, name: '1B', type: 'INPUT', description: 'Gate 1 Input B' },
+      { pinNumber: 4, name: '2Y', type: 'OUTPUT', description: 'Gate 2 Output (NOR) - Note: Pin 4 is OUTPUT!' },
+      { pinNumber: 5, name: '2A', type: 'INPUT', description: 'Gate 2 Input A' },
+      { pinNumber: 6, name: '2B', type: 'INPUT', description: 'Gate 2 Input B' },
+      { pinNumber: 7, name: 'GND', type: 'POWER_GND', description: 'Ground (0V)' },
+      { pinNumber: 8, name: '3A', type: 'INPUT', description: 'Gate 3 Input A' },
+      { pinNumber: 9, name: '3B', type: 'INPUT', description: 'Gate 3 Input B' },
+      { pinNumber: 10, name: '3Y', type: 'OUTPUT', description: 'Gate 3 Output (NOR)' },
+      { pinNumber: 11, name: '4A', type: 'INPUT', description: 'Gate 4 Input A' },
+      { pinNumber: 12, name: '4B', type: 'INPUT', description: 'Gate 4 Input B' },
+      { pinNumber: 13, name: '4Y', type: 'OUTPUT', description: 'Gate 4 Output (NOR)' },
+      { pinNumber: 14, name: 'VCC', type: 'POWER_VCC', description: 'Supply Voltage (+5V)' },
+    ],
+    evaluate: (inputs) => {
+      const nor = (a?: LogicLevel, b?: LogicLevel): LogicLevel => {
+        if (a === 1 || b === 1) return 0;
+        if (a === 0 && b === 0) return 1;
+        return 'X';
+      };
+      return {
+        1: nor(inputs[2], inputs[3]),
+        4: nor(inputs[5], inputs[6]),
+        10: nor(inputs[8], inputs[9]),
+        13: nor(inputs[11], inputs[12]),
+      };
+    },
+  },
 };
