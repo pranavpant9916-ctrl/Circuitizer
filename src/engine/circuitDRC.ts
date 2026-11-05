@@ -37,12 +37,12 @@ export class CircuitDRC {
       });
 
       // 2. Validate Jumper Wires
-      if (step.wireToAdd) {
-        const fromHole = defaultGrid.getHole(step.wireToAdd.fromHole);
-        const toHole = defaultGrid.getHole(step.wireToAdd.toHole);
+      const checkWire = (wire: any) => {
+        const fromHole = defaultGrid.getHole(wire.fromHole);
+        const toHole = defaultGrid.getHole(wire.toHole);
 
         if (!fromHole || !toHole) {
-          errors.push(`Step ${stepIdx + 1}: Jumper wire connects to invalid holes (${step.wireToAdd.fromHole} -> ${step.wireToAdd.toHole}).`);
+          errors.push(`Step ${stepIdx + 1}: Jumper wire connects to invalid holes (${wire.fromHole} -> ${wire.toHole}).`);
         } else {
           // Check for direct rail dead short
           const isFromVCC = fromHole.section === 'TOP_RAIL_VCC' || fromHole.section === 'BOT_RAIL_VCC';
@@ -54,11 +54,13 @@ export class CircuitDRC {
             errors.push(`Step ${stepIdx + 1}: Fatal Dead Short! Wire directly connects +5V VCC rail to 0V Ground rail.`);
           }
         }
-      }
+      };
+
+      if (step.wireToAdd) checkWire(step.wireToAdd);
+      if (step.wiresToAdd) step.wiresToAdd.forEach(checkWire);
 
       // 3. Validate IC Placement
-      if (step.icToAdd) {
-        const ic = step.icToAdd;
+      const checkIC = (ic: any) => {
         const reg = IC_REGISTRY[ic.model];
         if (!reg) {
           warnings.push(`Step ${stepIdx + 1}: Unrecognized IC model "${ic.model}". Using generic DIP layout.`);
@@ -80,7 +82,10 @@ export class CircuitDRC {
             }
           }
         }
-      }
+      };
+
+      if (step.icToAdd) checkIC(step.icToAdd);
+      if (step.icsToAdd) step.icsToAdd.forEach(checkIC);
 
       // 4. Validate Resistors
       if (step.resistorToAdd) {

@@ -29,29 +29,21 @@ export const StepBottomSheet: React.FC = () => {
   if (!activeExp) return null;
 
   const isAnyLedLit = circuitState.leds.some((l) => l.isLit);
-  const swA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed ? 1 : 0;
-  const swB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed ? 1 : 0;
 
   const currentStep = activeExp.steps[currentStepIndex];
   const totalSteps = activeExp.steps.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
-  // Apply row inputs when clicked in truth table
+  // Apply row inputs when clicked in truth table across all circuit switches
   const applyRowInputs = (row: (string | number)[]) => {
-    if (typeof row[0] === 'number') {
-      const targetA = row[0] === 1;
-      const currentA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed;
-      if (currentA !== undefined && currentA !== targetA) {
-        toggleSwitch('sw-a');
+    circuitState.switches.forEach((sw, idx) => {
+      if (typeof row[idx] === 'number') {
+        const target = row[idx] === 1;
+        if (sw.isClosed !== target) {
+          toggleSwitch(sw.id);
+        }
       }
-    }
-    if (typeof row[1] === 'number') {
-      const targetB = row[1] === 1;
-      const currentB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed;
-      if (currentB !== undefined && currentB !== targetB) {
-        toggleSwitch('sw-b');
-      }
-    }
+    });
   };
 
   return (
@@ -249,13 +241,15 @@ export const StepBottomSheet: React.FC = () => {
               </div>
 
               {/* Active Switch Inputs */}
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200">
-                  A={swA}
-                </span>
-                <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200">
-                  B={swB}
-                </span>
+              <div className="flex items-center gap-2 text-xs font-mono flex-wrap justify-end">
+                {circuitState.switches.map((sw) => (
+                  <span
+                    key={sw.id}
+                    className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200"
+                  >
+                    {sw.label}={sw.isClosed ? 1 : 0}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -275,9 +269,14 @@ export const StepBottomSheet: React.FC = () => {
                 <tbody className="divide-y divide-white/5 font-mono">
                   {activeExp.truthTable.rows.map((row, rIdx) => {
                     const isRowActive =
-                      typeof row[0] === 'number' &&
-                      row[0] === swA &&
-                      (typeof row[1] !== 'number' || row[1] === swB);
+                      circuitState.switches.length > 0
+                        ? circuitState.switches.every((sw, idx) => {
+                            if (typeof row[idx] === 'number') {
+                              return (sw.isClosed ? 1 : 0) === row[idx];
+                            }
+                            return true;
+                          })
+                        : false;
 
                     const rowText = String(row[row.length - 1]);
                     const rowIsLit =

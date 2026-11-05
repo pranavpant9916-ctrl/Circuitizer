@@ -16,10 +16,15 @@ export interface NavigationStep {
   commonPitfall?: string;
   highlightHoles: string[];
   wireToAdd?: JumperWire;
+  wiresToAdd?: JumperWire[];
   icToAdd?: PlacedIC;
+  icsToAdd?: PlacedIC[];
   resistorToAdd?: PlacedResistor;
+  resistorsToAdd?: PlacedResistor[];
   ledToAdd?: PlacedLED;
+  ledsToAdd?: PlacedLED[];
   switchToAdd?: PlacedSwitch;
+  switchesToAdd?: PlacedSwitch[];
   segmentDisplayToAdd?: PlacedSegmentDisplay;
 }
 

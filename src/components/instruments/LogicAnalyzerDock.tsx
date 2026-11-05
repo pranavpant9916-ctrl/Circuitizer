@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { PlacedSwitch } from '../../types/circuit';
-import { Activity, ChevronDown, ChevronUp, Play, Pause, RotateCw, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Activity, ChevronDown, ChevronUp, Play, Pause, RotateCw, ToggleLeft, ToggleRight, X } from 'lucide-react';
 
 export const LogicAnalyzerDock: React.FC = () => {
   const {
+    isAnalyzerOpen,
+    toggleAnalyzer,
     isSimRunning,
     toggleSimulation,
     stepClock,
@@ -17,6 +19,8 @@ export const LogicAnalyzerDock: React.FC = () => {
 
   const [isMinimized, setIsMinimized] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  if (!isAnalyzerOpen) return null;
 
   // Simulation interval loop when isSimRunning is true
   useEffect(() => {
@@ -142,8 +146,18 @@ export const LogicAnalyzerDock: React.FC = () => {
             <button
               onClick={() => setIsMinimized(!isMinimized)}
               className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+              title={isMinimized ? 'Expand' : 'Collapse'}
             >
               {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {/* Close Dock */}
+            <button
+              onClick={toggleAnalyzer}
+              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+              title="Close Waveform Analyzer"
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

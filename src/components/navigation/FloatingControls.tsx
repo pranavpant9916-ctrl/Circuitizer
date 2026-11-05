@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
-import { Eye, Gauge, Layers, LocateFixed, Minus, Plus, Zap } from 'lucide-react';
+import { Activity, Eye, Gauge, Layers, LocateFixed, Minus, Plus, Zap } from 'lucide-react';
 
 export const FloatingControls: React.FC = () => {
   const {
@@ -10,6 +10,8 @@ export const FloatingControls: React.FC = () => {
     toggleLayer,
     isProbeMode,
     toggleProbeMode,
+    isAnalyzerOpen,
+    toggleAnalyzer,
   } = useCircuitStore();
 
   const [showLayerMenu, setShowLayerMenu] = useState(false);
@@ -107,6 +109,17 @@ export const FloatingControls: React.FC = () => {
           title="Multimeter / Logic Probe"
         >
           <Gauge className="w-4 h-4" />
+        </button>
+
+        {/* Toggle Waveform Analyzer */}
+        <button
+          onClick={toggleAnalyzer}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+            isAnalyzerOpen ? 'bg-white text-black shadow-md' : 'text-obsidian-300 hover:bg-white/10 hover:text-white'
+          }`}
+          title="Waveform Analyzer / Oscilloscope"
+        >
+          <Activity className="w-4 h-4" />
         </button>
 
         {/* Toggle Layers */}

@@ -93,6 +93,10 @@ interface CircuitStoreState {
   toggleProbeMode: () => void;
   probeHole: (holeId: string | null) => void;
 
+  // Waveform Analyzer Dock
+  isAnalyzerOpen: boolean;
+  toggleAnalyzer: () => void;
+
   // AI Circuit Synthesis
   loadSynthesizedExperiment: (exp: Experiment) => void;
 }
@@ -112,10 +116,15 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     for (let i = 0; i <= upToStepIdx && i < exp.steps.length; i++) {
       const step = exp.steps[i];
       if (step.icToAdd) ics.push(step.icToAdd);
+      if (step.icsToAdd) ics.push(...step.icsToAdd);
       if (step.wireToAdd) wires.push(step.wireToAdd);
+      if (step.wiresToAdd) wires.push(...step.wiresToAdd);
       if (step.resistorToAdd) resistors.push(step.resistorToAdd);
+      if (step.resistorsToAdd) resistors.push(...step.resistorsToAdd);
       if (step.ledToAdd) leds.push(step.ledToAdd);
+      if (step.ledsToAdd) leds.push(...step.ledsToAdd);
       if (step.switchToAdd) switches.push(step.switchToAdd);
+      if (step.switchesToAdd) switches.push(...step.switchesToAdd);
       if (step.segmentDisplayToAdd) segmentDisplays.push(step.segmentDisplayToAdd);
     }
 
@@ -163,12 +172,18 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     simTick: 0,
     isDeadShort: false,
     waveforms: [],
+    isAnalyzerOpen: false,
+
+    toggleAnalyzer: () => {
+      set((state) => ({ isAnalyzerOpen: !state.isAnalyzerOpen }));
+    },
 
     selectExperiment: (id) => {
-      const exp = EXPERIMENTS.find((e) => e.id === id) || EXPERIMENTS[0];
+      const { experiments } = get();
+      const exp = experiments.find((e) => e.id === id) || experiments[0];
       const newCircuit = buildCircuitForStep(exp, 0);
       set({
-        activeExpId: id,
+        activeExpId: exp.id,
         currentStepIndex: 0,
         circuitState: newCircuit,
         waveforms: [],
@@ -191,8 +206,8 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     },
 
     nextStep: () => {
-      const { activeExpId, currentStepIndex } = get();
-      const exp = EXPERIMENTS.find((e) => e.id === activeExpId);
+      const { experiments, activeExpId, currentStepIndex } = get();
+      const exp = experiments.find((e) => e.id === activeExpId);
       if (!exp || currentStepIndex >= exp.steps.length - 1) return;
 
       const nextIdx = currentStepIndex + 1;
@@ -203,8 +218,8 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     },
 
     prevStep: () => {
-      const { activeExpId, currentStepIndex } = get();
-      const exp = EXPERIMENTS.find((e) => e.id === activeExpId);
+      const { experiments, activeExpId, currentStepIndex } = get();
+      const exp = experiments.find((e) => e.id === activeExpId);
       if (!exp || currentStepIndex <= 0) return;
 
       const prevIdx = currentStepIndex - 1;
@@ -215,8 +230,8 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     },
 
     jumpToStep: (stepIndex) => {
-      const { activeExpId } = get();
-      const exp = EXPERIMENTS.find((e) => e.id === activeExpId);
+      const { experiments, activeExpId } = get();
+      const exp = experiments.find((e) => e.id === activeExpId);
       if (!exp) return;
       const validIdx = Math.max(0, Math.min(stepIndex, exp.steps.length - 1));
       const newCircuit = buildCircuitForStep(exp, validIdx);
