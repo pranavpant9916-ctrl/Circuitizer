@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
+import { AICircuitCopilot } from './AICircuitCopilot';
 import { AlertCircle, Camera, ChevronDown, Compass, Cpu, Sparkles, X } from 'lucide-react';
 
 export const RouteBar: React.FC = () => {
@@ -13,6 +14,7 @@ export const RouteBar: React.FC = () => {
   } = useCircuitStore();
 
   const [showExpPicker, setShowExpPicker] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
   const activeExp = experiments.find((e) => e.id === activeExpId);
 
   return (
@@ -37,6 +39,17 @@ export const RouteBar: React.FC = () => {
                 {activeExp?.title}
               </div>
             </div>
+          </button>
+
+          {/* AI Synthesizer Action Pill */}
+          <button
+            onClick={() => setShowCopilot(true)}
+            className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-medium flex items-center gap-1.5 transition shadow-sm shrink-0"
+            title="Synthesize custom circuit with AI"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-obsidian-200" />
+            <span className="hidden sm:inline">AI Synthesizer</span>
+            <span className="sm:hidden">AI</span>
           </button>
 
           {/* Mode Switcher: Guide vs Scan */}
@@ -75,6 +88,9 @@ export const RouteBar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* AI Circuit Copilot Modal */}
+      <AICircuitCopilot isOpen={showCopilot} onClose={() => setShowCopilot(false)} />
 
       {/* Experiment Picker Modal */}
       {showExpPicker && (

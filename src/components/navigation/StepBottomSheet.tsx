@@ -18,6 +18,8 @@ export const StepBottomSheet: React.FC = () => {
     currentStepIndex,
     nextStep,
     prevStep,
+    circuitState,
+    toggleSwitch,
   } = useCircuitStore();
 
   const [showApparatus, setShowApparatus] = useState(false);
@@ -26,9 +28,31 @@ export const StepBottomSheet: React.FC = () => {
   const activeExp = experiments.find((e) => e.id === activeExpId);
   if (!activeExp) return null;
 
+  const isAnyLedLit = circuitState.leds.some((l) => l.isLit);
+  const swA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed ? 1 : 0;
+  const swB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed ? 1 : 0;
+
   const currentStep = activeExp.steps[currentStepIndex];
   const totalSteps = activeExp.steps.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
+
+  // Apply row inputs when clicked in truth table
+  const applyRowInputs = (row: (string | number)[]) => {
+    if (typeof row[0] === 'number') {
+      const targetA = row[0] === 1;
+      const currentA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed;
+      if (currentA !== undefined && currentA !== targetA) {
+        toggleSwitch('sw-a');
+      }
+    }
+    if (typeof row[1] === 'number') {
+      const targetB = row[1] === 1;
+      const currentB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed;
+      if (currentB !== undefined && currentB !== targetB) {
+        toggleSwitch('sw-b');
+      }
+    }
+  };
 
   return (
     <>
@@ -167,15 +191,28 @@ export const StepBottomSheet: React.FC = () => {
         </div>
       )}
 
-      {/* Truth Table Modal */}
+      {/* Truth Table Modal with Live LED Simulation */}
       {showTruthTable && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95">
+          <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-obsidian-200" />
-                Truth Table
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10">
+                  <FileText className="w-4 h-4 text-obsidian-200" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
+                    <span>Truth Table Simulation</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-obsidian-200 font-mono">
+                      Live Synced
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-obsidian-300 font-serif">
+                    Click any row to test that input combination on the breadboard and watch the LED respond.
+                  </p>
+                </div>
+              </div>
+
               <button
                 onClick={() => setShowTruthTable(false)}
                 className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
@@ -184,29 +221,108 @@ export const StepBottomSheet: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Live Hardware LED Status Card */}
+            <div className="bg-black/60 border border-white/10 rounded-g2 p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Glowing Simulated LED Bulb */}
+                <div className="relative flex items-center justify-center">
+                  <div
+                    className={`w-5 h-5 rounded-full transition-all duration-300 ${
+                      isAnyLedLit
+                        ? 'bg-white shadow-[0_0_16px_rgba(255,255,255,1)] ring-2 ring-white/50'
+                        : 'bg-[#171a22] border border-white/20'
+                    }`}
+                  />
+                  {isAnyLedLit && (
+                    <div className="absolute w-2 h-2 rounded-full bg-white blur-[1px]" />
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-obsidian-400">
+                    Live Breadboard LED
+                  </div>
+                  <div className="text-xs font-semibold text-white tracking-tight font-serif">
+                    {isAnyLedLit ? 'Output is HIGH (+5V) — LED is LIT' : 'Output is LOW (0V) — LED is DARK'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Switch Inputs */}
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200">
+                  A={swA}
+                </span>
+                <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200">
+                  B={swB}
+                </span>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto border border-white/10 rounded-g2">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 text-obsidian-400 font-mono">
+                  <tr className="border-b border-white/10 bg-white/[0.02] text-obsidian-400 font-mono">
+                    <th className="py-2.5 px-3 font-semibold text-[10px] uppercase">State</th>
                     {activeExp.truthTable.headers.map((h, i) => (
-                      <th key={i} className="py-2.5 px-3 font-semibold">
+                      <th key={i} className="py-2.5 px-3 font-semibold text-[10px] uppercase">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-mono">
-                  {activeExp.truthTable.rows.map((row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-white/[0.04]">
-                      {row.map((val, cIdx) => (
-                        <td key={cIdx} className="py-2.5 px-3 text-obsidian-200">
-                          {String(val)}
+                  {activeExp.truthTable.rows.map((row, rIdx) => {
+                    const isRowActive =
+                      typeof row[0] === 'number' &&
+                      row[0] === swA &&
+                      (typeof row[1] !== 'number' || row[1] === swB);
+
+                    const rowText = String(row[row.length - 1]);
+                    const rowIsLit =
+                      rowText.includes('1') ||
+                      rowText.includes('ON') ||
+                      rowText.includes('Lit');
+
+                    return (
+                      <tr
+                        key={rIdx}
+                        onClick={() => applyRowInputs(row)}
+                        className={`cursor-pointer transition-all ${
+                          isRowActive
+                            ? 'bg-white/10 text-white font-semibold'
+                            : 'hover:bg-white/[0.04] text-obsidian-200'
+                        }`}
+                      >
+                        {/* LED Simulation Bulb Column */}
+                        <td className="py-2.5 px-3 flex items-center gap-2">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full transition-all shrink-0 ${
+                              rowIsLit
+                                ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]'
+                                : 'bg-[#1e2029] border border-white/20'
+                            }`}
+                          />
+                          <span className="text-[10px] font-sans font-medium text-obsidian-300">
+                            {isRowActive ? 'ACTIVE' : `ROW ${rIdx + 1}`}
+                          </span>
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+
+                        {row.map((val, cIdx) => (
+                          <td key={cIdx} className="py-2.5 px-3">
+                            {String(val)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="text-[10px] text-obsidian-400 font-serif text-center pt-1">
+              Tip: Click any row to automatically set the inputs on the breadboard and verify the LED.
             </div>
           </div>
         </div>

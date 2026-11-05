@@ -92,6 +92,9 @@ interface CircuitStoreState {
   // Probe actions
   toggleProbeMode: () => void;
   probeHole: (holeId: string | null) => void;
+
+  // AI Circuit Synthesis
+  loadSynthesizedExperiment: (exp: Experiment) => void;
 }
 
 export const useCircuitStore = create<CircuitStoreState>((set, get) => {
@@ -166,6 +169,20 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       const newCircuit = buildCircuitForStep(exp, 0);
       set({
         activeExpId: id,
+        currentStepIndex: 0,
+        circuitState: newCircuit,
+        waveforms: [],
+      });
+      get().runSimTick();
+    },
+
+    loadSynthesizedExperiment: (newExp) => {
+      const { experiments } = get();
+      const updatedList = [newExp, ...experiments.filter((e) => e.id !== newExp.id)];
+      const newCircuit = buildCircuitForStep(newExp, 0);
+      set({
+        experiments: updatedList,
+        activeExpId: newExp.id,
         currentStepIndex: 0,
         circuitState: newCircuit,
         waveforms: [],
