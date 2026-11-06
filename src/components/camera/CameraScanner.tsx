@@ -133,19 +133,19 @@ export const CameraScanner: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-black flex flex-col justify-between">
+    <div className="fixed inset-0 z-40 bg-[#131d27] flex flex-col justify-between">
       {/* Top Header */}
-      <div className="p-4 bg-[#0d0f14]/90 backdrop-blur-xl border-b border-white/10 flex items-center justify-between z-10">
+      <div className="p-4 bg-[#1b2735]/95 backdrop-blur-xl border-b border-[#567C8D]/35 flex items-center justify-between z-10 text-[#F5EFEB]">
         <button
           onClick={() => setMode('GUIDE')}
-          className="flex items-center gap-1.5 text-xs font-medium text-obsidian-300 hover:text-white transition"
+          className="flex items-center gap-1.5 text-xs font-medium text-[#C8D9E6] hover:text-white transition"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back to Guide</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-white">
-          <Scan className="w-4 h-4 text-obsidian-200" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-white font-serif">
+          <Scan className="w-4 h-4 text-[#C8D9E6]" />
           <span>Breadboard Inspector</span>
         </div>
 
@@ -153,7 +153,7 @@ export const CameraScanner: React.FC = () => {
       </div>
 
       {/* Main Viewfinder / Camera Screen */}
-      <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
+      <div className="relative flex-1 bg-[#131d27] flex items-center justify-center overflow-hidden">
         {/* Hidden Canvas for snapshot extraction */}
         <canvas ref={canvasRef} className="hidden" />
 
@@ -174,12 +174,12 @@ export const CameraScanner: React.FC = () => {
 
         {/* Alignment Reticle & Grid Overlay */}
         {!capturedImage && (
-          <div className="absolute inset-8 border border-white/20 rounded-g2-xl pointer-events-none flex flex-col items-center justify-between p-4">
-            <div className="bg-[#0d0f14]/80 backdrop-blur-md text-obsidian-200 text-xs font-serif px-3 py-1 rounded-full border border-white/10">
+          <div className="absolute inset-8 border border-[#567C8D]/50 rounded-g2-xl pointer-events-none flex flex-col items-center justify-between p-4">
+            <div className="bg-[#1b2735]/85 backdrop-blur-md text-[#C8D9E6] text-xs font-serif px-3 py-1 rounded-full border border-[#567C8D]/40">
               Align physical breadboard within frame
             </div>
 
-            <div className="flex justify-between w-full text-[10px] text-obsidian-400 font-mono">
+            <div className="flex justify-between w-full text-[10px] text-[#C8D9E6]/70 font-mono">
               <span>Row 1 (Left)</span>
               <span>Row 63 (Right)</span>
             </div>
@@ -188,12 +188,12 @@ export const CameraScanner: React.FC = () => {
 
         {/* Camera Error / Fallback Banner */}
         {cameraError && !capturedImage && (
-          <div className="absolute inset-x-4 top-20 bg-[#0d0f14]/95 border border-white/15 p-4 rounded-g2-xl text-center flex flex-col items-center gap-2.5">
-            <AlertTriangle className="w-5 h-5 text-white" />
-            <div className="text-xs text-obsidian-200 font-serif leading-relaxed">{cameraError}</div>
+          <div className="absolute inset-x-4 top-20 bg-[#1b2735]/95 border border-[#567C8D]/40 p-4 rounded-g2-xl text-center flex flex-col items-center gap-2.5 text-[#F5EFEB]">
+            <AlertTriangle className="w-5 h-5 text-amber-300" />
+            <div className="text-xs text-[#C8D9E6] font-serif leading-relaxed">{cameraError}</div>
             <button
               onClick={handleCaptureAndAnalyze}
-              className="px-4 py-2 bg-white text-black font-semibold text-xs rounded-full transition hover:bg-obsidian-100"
+              className="px-4 py-2 bg-[#C8D9E6] text-[#131d27] font-semibold text-xs rounded-full transition hover:bg-white"
             >
               Run Synthetic Analysis
             </button>
@@ -202,10 +202,10 @@ export const CameraScanner: React.FC = () => {
 
         {/* Analyzing Spinner */}
         {isAnalyzing && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
-            <RefreshCw className="w-7 h-7 text-white animate-spin" />
+          <div className="absolute inset-0 bg-[#131d27]/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="w-7 h-7 text-[#C8D9E6] animate-spin" />
             <div className="text-xs font-semibold text-white flex items-center gap-2 font-serif">
-              <Sparkles className="w-4 h-4 text-obsidian-300" />
+              <Sparkles className="w-4 h-4 text-[#C8D9E6]" />
               Reconstructing Physical Netlist...
             </div>
           </div>
@@ -213,16 +213,16 @@ export const CameraScanner: React.FC = () => {
       </div>
 
       {/* Bottom Inspection Results / Action Drawer */}
-      <div className="bg-[#0d0f14] border-t border-white/10 p-4 flex flex-col gap-3 z-10 max-h-[45vh] overflow-y-auto">
+      <div className="bg-[#1b2735] border-t border-[#567C8D]/35 p-4 flex flex-col gap-3 z-10 max-h-[45vh] overflow-y-auto text-[#F5EFEB]">
         {results ? (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-white">
+              <span className="text-xs font-semibold text-white font-serif">
                 Inspection Report
               </span>
               <button
                 onClick={handleRetake}
-                className="text-xs text-obsidian-300 hover:text-white font-medium"
+                className="text-xs text-[#C8D9E6] hover:text-white font-medium"
               >
                 Scan Again
               </button>
@@ -234,22 +234,22 @@ export const CameraScanner: React.FC = () => {
                   key={i}
                   className={`p-3 rounded-g2 border flex items-start gap-2.5 ${
                     res.type === 'SUCCESS'
-                      ? 'bg-white/[0.04] border-white/15 text-white'
+                      ? 'bg-[#2F4156]/50 border-[#C8D9E6]/30 text-white'
                       : res.type === 'WARNING'
-                      ? 'bg-white/[0.02] border-white/10 text-obsidian-200'
-                      : 'bg-white/[0.06] border-white/20 text-white'
+                      ? 'bg-[#2F4156]/30 border-amber-400/30 text-[#C8D9E6]'
+                      : 'bg-[#2F4156]/60 border-rose-400/40 text-white'
                   }`}
                 >
                   {res.type === 'SUCCESS' ? (
-                    <Check className="w-4 h-4 text-white shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   ) : res.type === 'WARNING' ? (
-                    <AlertTriangle className="w-4 h-4 text-obsidian-300 shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
                   ) : (
-                    <AlertCircle className="w-4 h-4 text-white shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   )}
                   <div>
                     <div className="text-xs font-semibold text-white">{res.title}</div>
-                    <div className="text-[11px] text-obsidian-300 font-serif leading-relaxed mt-0.5">
+                    <div className="text-[11px] text-[#C8D9E6]/80 font-serif leading-relaxed mt-0.5">
                       {res.description}
                     </div>
                   </div>
@@ -259,14 +259,14 @@ export const CameraScanner: React.FC = () => {
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="text-xs text-obsidian-300 font-serif">
+            <div className="text-xs text-[#C8D9E6]/80 font-serif">
               Point camera top-down at circuit
             </div>
 
             <button
               onClick={handleCaptureAndAnalyze}
               disabled={isAnalyzing}
-              className="px-5 py-2.5 bg-white text-black hover:bg-obsidian-100 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg transition active:scale-95"
+              className="px-5 py-2.5 bg-[#C8D9E6] text-[#131d27] hover:bg-white rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg transition active:scale-95"
             >
               <Camera className="w-4 h-4" />
               <span>Capture & Check</span>

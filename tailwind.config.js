@@ -11,19 +11,45 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
+        // Direct palette from design reference
+        palette: {
+          navy: {
+            DEFAULT: '#2F4156',
+            dark: '#1b2735',
+            darker: '#131d27',
+            light: '#3e546e',
+          },
+          teal: {
+            DEFAULT: '#567C8D',
+            dark: '#3f5d6a',
+            light: '#6f96a7',
+          },
+          sky: {
+            DEFAULT: '#C8D9E6',
+            dark: '#a8c2d5',
+            light: '#e1ecf4',
+          },
+          beige: {
+            DEFAULT: '#F5EFEB',
+            dark: '#e8ded7',
+            light: '#faf7f5',
+          },
+          white: '#FFFFFF',
+        },
+        // Mapped scale harmonized to Navy, Teal, Sky Blue, Beige, and White
         obsidian: {
-          DEFAULT: '#000000',
-          50: '#ffffff',
-          100: '#ebedf2',
-          200: '#cfd3dd',
-          300: '#a3a9b7',
-          400: '#787f8f',
-          500: '#525866',
-          600: '#353a47',
-          700: '#222631',
-          800: '#171a22',
-          900: '#0d0f14',
-          950: '#06070a',
+          DEFAULT: '#131d27',
+          50: '#FFFFFF',      // White
+          100: '#F5EFEB',     // Beige
+          200: '#C8D9E6',     // Sky Blue
+          300: '#a8c2d5',     // Soft Sky Blue
+          400: '#6f96a7',     // Light Teal
+          500: '#567C8D',     // Teal
+          600: '#3f5d6a',     // Dark Teal
+          700: '#3e546e',     // Light Navy
+          800: '#2F4156',     // Core Navy
+          900: '#1b2735',     // Dark Navy (cards & drawers)
+          950: '#131d27',     // Deepest Navy (canvas & background)
         },
       },
       borderRadius: {

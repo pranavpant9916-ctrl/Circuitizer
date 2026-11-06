@@ -49,11 +49,11 @@ export const StepBottomSheet: React.FC = () => {
   return (
     <>
       <div className="absolute bottom-4 left-4 right-4 z-30 pointer-events-auto">
-        <div className="bg-[#0d0f14]/90 backdrop-blur-xl border border-white/10 rounded-g2-xl shadow-2xl overflow-hidden transition-all duration-300">
+        <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/35 rounded-g2-xl shadow-2xl overflow-hidden transition-all duration-300 text-[#F5EFEB]">
           {/* Progress Indicator Bar */}
-          <div className="w-full bg-white/5 h-1">
+          <div className="w-full bg-[#131d27] h-1.5">
             <div
-              className="bg-white h-1 transition-all duration-300"
+              className="bg-[#C8D9E6] h-1.5 transition-all duration-300 shadow-[0_0_8px_rgba(200,217,230,0.6)]"
               style={{ width: `${((currentStepIndex + 1) / totalSteps) * 100}%` }}
             />
           </div>
@@ -62,10 +62,10 @@ export const StepBottomSheet: React.FC = () => {
             {/* Header: Step Number & Actions */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-sans font-semibold tracking-wider uppercase border border-white/10">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#2F4156] text-[#C8D9E6] text-[10px] font-sans font-semibold tracking-wider uppercase border border-[#567C8D]/40">
                   Step {currentStepIndex + 1} of {totalSteps}
                 </span>
-                <span className="text-xs font-semibold text-white tracking-tight truncate">
+                <span className="text-xs font-semibold text-white tracking-tight truncate font-serif">
                   {currentStep?.title}
                 </span>
               </div>
@@ -74,7 +74,7 @@ export const StepBottomSheet: React.FC = () => {
                 {/* Apparatus Inventory Button */}
                 <button
                   onClick={() => setShowApparatus(true)}
-                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs font-medium text-obsidian-200 border border-white/10 flex items-center gap-1.5 transition"
+                  className="px-2.5 py-1 rounded-full bg-[#2F4156]/70 hover:bg-[#2F4156] text-xs font-medium text-[#C8D9E6] border border-[#567C8D]/40 flex items-center gap-1.5 transition shadow-sm"
                 >
                   <Boxes className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Apparatus</span>
@@ -83,7 +83,7 @@ export const StepBottomSheet: React.FC = () => {
                 {/* Truth Table Button */}
                 <button
                   onClick={() => setShowTruthTable(true)}
-                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs font-medium text-obsidian-200 border border-white/10 flex items-center gap-1.5 transition"
+                  className="px-2.5 py-1 rounded-full bg-[#2F4156]/70 hover:bg-[#2F4156] text-xs font-medium text-[#C8D9E6] border border-[#567C8D]/40 flex items-center gap-1.5 transition shadow-sm"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Table</span>
@@ -92,32 +92,32 @@ export const StepBottomSheet: React.FC = () => {
             </div>
 
             {/* Turn-by-Turn Instruction */}
-            <div className="text-sm font-normal text-white leading-relaxed font-serif">
+            <div className="text-sm font-normal text-[#F5EFEB] leading-relaxed font-serif">
               {currentStep?.instruction}
             </div>
 
             {/* Sub-Text Guidance Tip */}
             {currentStep?.subText && (
-              <div className="text-xs text-obsidian-300 flex items-start gap-2 bg-white/[0.03] p-2.5 rounded-g2 border border-white/5 font-serif">
-                <Info className="w-3.5 h-3.5 text-obsidian-300 shrink-0 mt-0.5" />
+              <div className="text-xs text-[#C8D9E6]/90 flex items-start gap-2 bg-[#131d27]/70 p-2.5 rounded-g2 border border-[#567C8D]/30 font-serif">
+                <Info className="w-3.5 h-3.5 text-[#C8D9E6] shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{currentStep.subText}</span>
               </div>
             )}
 
             {/* Common Pitfall Alert */}
             {currentStep?.commonPitfall && (
-              <div className="text-xs text-obsidian-200 flex items-start gap-2 bg-white/[0.06] p-2.5 rounded-g2 border border-white/15 font-serif">
-                <AlertTriangle className="w-3.5 h-3.5 text-white shrink-0 mt-0.5" />
+              <div className="text-xs text-[#F5EFEB] flex items-start gap-2 bg-[#2F4156]/80 p-2.5 rounded-g2 border border-amber-400/40 font-serif">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-300 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{currentStep.commonPitfall}</span>
               </div>
             )}
 
             {/* Bottom Actions: Previous & Next Step */}
-            <div className="flex items-center justify-between pt-1 border-t border-white/10">
+            <div className="flex items-center justify-between pt-1 border-t border-[#567C8D]/20">
               <button
                 onClick={prevStep}
                 disabled={currentStepIndex === 0}
-                className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition text-obsidian-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
+                className="px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition text-[#C8D9E6]/70 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Previous</span>
@@ -127,8 +127,8 @@ export const StepBottomSheet: React.FC = () => {
                 onClick={nextStep}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 transition shadow-md ${
                   isLastStep
-                    ? 'bg-white text-black hover:bg-obsidian-100'
-                    : 'bg-white text-black hover:bg-obsidian-100'
+                    ? 'bg-[#C8D9E6] text-[#131d27] hover:bg-white'
+                    : 'bg-[#C8D9E6] text-[#131d27] hover:bg-white'
                 }`}
               >
                 <span>{isLastStep ? 'Complete' : 'Next Step'}</span>
@@ -141,16 +141,16 @@ export const StepBottomSheet: React.FC = () => {
 
       {/* Apparatus Inventory Modal */}
       {showApparatus && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-[#131d27]/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 text-[#F5EFEB]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/20">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Boxes className="w-4 h-4 text-obsidian-200" />
+                <Boxes className="w-4 h-4 text-[#C8D9E6]" />
                 Required Apparatus
               </h3>
               <button
                 onClick={() => setShowApparatus(false)}
-                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+                className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#C8D9E6] flex items-center justify-center transition border border-[#567C8D]/30"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -160,20 +160,20 @@ export const StepBottomSheet: React.FC = () => {
               {activeExp.apparatus.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white/[0.03] border border-white/10 p-3 rounded-g2 flex items-center justify-between"
+                  className="bg-[#131d27]/50 border border-[#567C8D]/30 p-3 rounded-g2 flex items-center justify-between"
                 >
                   <div className="flex-1 pr-2">
                     <div className="text-xs font-semibold text-white">{item.name}</div>
-                    <div className="text-[11px] text-obsidian-300 font-serif leading-relaxed">
+                    <div className="text-[11px] text-[#C8D9E6]/80 font-serif leading-relaxed">
                       {item.description}
                     </div>
                     {item.colorCode && (
-                      <div className="text-[10px] text-obsidian-400 font-mono mt-1">
+                      <div className="text-[10px] text-[#C8D9E6]/60 font-mono mt-1">
                         Color Code: {item.colorCode}
                       </div>
                     )}
                   </div>
-                  <div className="px-2.5 py-0.5 bg-white/10 rounded-full text-xs font-mono font-semibold text-white shrink-0">
+                  <div className="px-2.5 py-0.5 bg-[#2F4156] border border-[#567C8D]/40 rounded-full text-xs font-mono font-semibold text-[#C8D9E6] shrink-0">
                     x{item.count}
                   </div>
                 </div>
@@ -185,21 +185,21 @@ export const StepBottomSheet: React.FC = () => {
 
       {/* Truth Table Modal with Live LED Simulation */}
       {showTruthTable && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-[#131d27]/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 text-[#F5EFEB]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/20">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10">
-                  <FileText className="w-4 h-4 text-obsidian-200" />
+                <div className="w-8 h-8 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40">
+                  <FileText className="w-4 h-4 text-[#C8D9E6]" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
                     <span>Truth Table Simulation</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-obsidian-200 font-mono">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F4156] text-[#C8D9E6] font-mono border border-[#567C8D]/40">
                       Live Synced
                     </span>
                   </h3>
-                  <p className="text-[11px] text-obsidian-300 font-serif">
+                  <p className="text-[11px] text-[#C8D9E6]/80 font-serif">
                     Click any row to test that input combination on the breadboard and watch the LED respond.
                   </p>
                 </div>
@@ -207,14 +207,14 @@ export const StepBottomSheet: React.FC = () => {
 
               <button
                 onClick={() => setShowTruthTable(false)}
-                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+                className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#C8D9E6] flex items-center justify-center transition border border-[#567C8D]/30"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Live Hardware LED Status Card */}
-            <div className="bg-black/60 border border-white/10 rounded-g2 p-3.5 flex items-center justify-between">
+            <div className="bg-[#131d27]/80 border border-[#567C8D]/35 rounded-g2 p-3.5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {/* Glowing Simulated LED Bulb */}
                 <div className="relative flex items-center justify-center">
@@ -222,7 +222,7 @@ export const StepBottomSheet: React.FC = () => {
                     className={`w-5 h-5 rounded-full transition-all duration-300 ${
                       isAnyLedLit
                         ? 'bg-white shadow-[0_0_16px_rgba(255,255,255,1)] ring-2 ring-white/50'
-                        : 'bg-[#171a22] border border-white/20'
+                        : 'bg-[#2F4156] border border-[#567C8D]/40'
                     }`}
                   />
                   {isAnyLedLit && (
@@ -231,7 +231,7 @@ export const StepBottomSheet: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-obsidian-400">
+                  <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
                     Live Breadboard LED
                   </div>
                   <div className="text-xs font-semibold text-white tracking-tight font-serif">
@@ -245,7 +245,7 @@ export const StepBottomSheet: React.FC = () => {
                 {circuitState.switches.map((sw) => (
                   <span
                     key={sw.id}
-                    className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-obsidian-200"
+                    className="px-2 py-1 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6]"
                   >
                     {sw.label}={sw.isClosed ? 1 : 0}
                   </span>
@@ -254,10 +254,10 @@ export const StepBottomSheet: React.FC = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto border border-white/10 rounded-g2">
+            <div className="overflow-x-auto border border-[#567C8D]/30 rounded-g2 bg-[#131d27]/40">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-white/10 bg-white/[0.02] text-obsidian-400 font-mono">
+                  <tr className="border-b border-[#567C8D]/25 bg-[#2F4156]/40 text-[#C8D9E6] font-mono">
                     <th className="py-2.5 px-3 font-semibold text-[10px] uppercase">State</th>
                     {activeExp.truthTable.headers.map((h, i) => (
                       <th key={i} className="py-2.5 px-3 font-semibold text-[10px] uppercase">
@@ -266,7 +266,7 @@ export const StepBottomSheet: React.FC = () => {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5 font-mono">
+                <tbody className="divide-y divide-[#567C8D]/20 font-mono">
                   {activeExp.truthTable.rows.map((row, rIdx) => {
                     const isRowActive =
                       circuitState.switches.length > 0
@@ -290,8 +290,8 @@ export const StepBottomSheet: React.FC = () => {
                         onClick={() => applyRowInputs(row)}
                         className={`cursor-pointer transition-all ${
                           isRowActive
-                            ? 'bg-white/10 text-white font-semibold'
-                            : 'hover:bg-white/[0.04] text-obsidian-200'
+                            ? 'bg-[#2F4156] text-white font-semibold'
+                            : 'hover:bg-[#2F4156]/40 text-[#C8D9E6]'
                         }`}
                       >
                         {/* LED Simulation Bulb Column */}
@@ -300,10 +300,10 @@ export const StepBottomSheet: React.FC = () => {
                             className={`w-2.5 h-2.5 rounded-full transition-all shrink-0 ${
                               rowIsLit
                                 ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]'
-                                : 'bg-[#1e2029] border border-white/20'
+                                : 'bg-[#1b2735] border border-[#567C8D]/40'
                             }`}
                           />
-                          <span className="text-[10px] font-sans font-medium text-obsidian-300">
+                          <span className="text-[10px] font-sans font-medium text-[#C8D9E6]">
                             {isRowActive ? 'ACTIVE' : `ROW ${rIdx + 1}`}
                           </span>
                         </td>
@@ -320,7 +320,7 @@ export const StepBottomSheet: React.FC = () => {
               </table>
             </div>
 
-            <div className="text-[10px] text-obsidian-400 font-serif text-center pt-1">
+            <div className="text-[10px] text-[#C8D9E6]/70 font-serif text-center pt-1">
               Tip: Click any row to automatically set the inputs on the breadboard and verify the LED.
             </div>
           </div>

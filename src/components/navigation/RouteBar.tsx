@@ -21,21 +21,21 @@ export const RouteBar: React.FC = () => {
     <>
       {/* Top Floating Bar */}
       <div className="absolute top-4 left-4 right-4 z-30 flex flex-col gap-2.5 pointer-events-auto">
-        <div className="bg-[#0d0f14]/85 backdrop-blur-xl border border-white/10 rounded-g2-lg p-2.5 shadow-2xl flex items-center justify-between gap-3">
+        <div className="bg-[#1b2735]/90 backdrop-blur-xl border border-[#567C8D]/35 rounded-g2-lg p-2.5 shadow-2xl flex items-center justify-between gap-3 text-[#F5EFEB]">
           {/* Experiment Title Selector */}
           <button
             onClick={() => setShowExpPicker(!showExpPicker)}
-            className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-white/5 p-1.5 rounded-g2 transition"
+            className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-[#2F4156]/50 p-1.5 rounded-g2 transition"
           >
-            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center shrink-0 border border-white/15">
+            <div className="w-8 h-8 rounded-full bg-[#2F4156] text-[#C8D9E6] flex items-center justify-center shrink-0 border border-[#567C8D]/40 shadow-sm">
               <Compass className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] tracking-wide text-obsidian-300 flex items-center gap-1">
+              <div className="text-[11px] tracking-wide text-[#C8D9E6] flex items-center gap-1 font-sans">
                 <span>{activeExp?.category}</span>
-                <ChevronDown className="w-3 h-3 text-obsidian-400" />
+                <ChevronDown className="w-3 h-3 text-[#567C8D]" />
               </div>
-              <div className="text-sm font-semibold text-white truncate tracking-tight">
+              <div className="text-sm font-semibold text-[#F5EFEB] truncate tracking-tight font-serif">
                 {activeExp?.title}
               </div>
             </div>
@@ -44,22 +44,22 @@ export const RouteBar: React.FC = () => {
           {/* AI Synthesizer Action Pill */}
           <button
             onClick={() => setShowCopilot(true)}
-            className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-white border border-white/15 text-xs font-medium flex items-center gap-1.5 transition shadow-sm shrink-0"
+            className="px-3 py-1.5 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#F5EFEB] border border-[#567C8D]/40 text-xs font-medium flex items-center gap-1.5 transition shadow-sm shrink-0"
             title="Synthesize custom circuit with AI"
           >
-            <Sparkles className="w-3.5 h-3.5 text-obsidian-200" />
+            <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
             <span className="hidden sm:inline">AI Synthesizer</span>
             <span className="sm:hidden">AI</span>
           </button>
 
           {/* Mode Switcher: Guide vs Scan */}
-          <div className="flex items-center bg-black/60 p-1 rounded-full border border-white/10 shrink-0">
+          <div className="flex items-center bg-[#131d27]/80 p-1 rounded-full border border-[#567C8D]/30 shrink-0">
             <button
               onClick={() => setMode('GUIDE')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
                 activeMode === 'GUIDE'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-obsidian-300 hover:text-white'
+                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                  : 'text-[#C8D9E6]/70 hover:text-white'
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
@@ -70,8 +70,8 @@ export const RouteBar: React.FC = () => {
               onClick={() => setMode('SCAN_CAMERA')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
                 activeMode === 'SCAN_CAMERA'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-obsidian-300 hover:text-white'
+                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                  : 'text-[#C8D9E6]/70 hover:text-white'
               }`}
             >
               <Camera className="w-3.5 h-3.5" />
@@ -82,8 +82,8 @@ export const RouteBar: React.FC = () => {
 
         {/* Short Circuit Warning Alert */}
         {isDeadShort && (
-          <div className="bg-[#171a22] text-white text-xs font-medium px-4 py-2.5 rounded-g2 border border-white/20 flex items-center gap-2.5 shadow-xl animate-pulse">
-            <AlertCircle className="w-4 h-4 text-white shrink-0" />
+          <div className="bg-[#2F4156] text-white text-xs font-medium px-4 py-2.5 rounded-g2 border border-rose-400/50 flex items-center gap-2.5 shadow-xl animate-pulse">
+            <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
             <span>Short circuit detected: Power rails VCC and GND are bridged.</span>
           </div>
         )}
@@ -94,16 +94,16 @@ export const RouteBar: React.FC = () => {
 
       {/* Experiment Picker Modal */}
       {showExpPicker && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center p-4 pt-20">
-          <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-[#131d27]/80 backdrop-blur-md flex items-start justify-center p-4 pt-20">
+          <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-md p-5 shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 text-[#F5EFEB]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/20">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-obsidian-200" />
+                <Sparkles className="w-4 h-4 text-[#C8D9E6]" />
                 Select Experiment
               </h3>
               <button
                 onClick={() => setShowExpPicker(false)}
-                className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+                className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#C8D9E6] flex items-center justify-center transition border border-[#567C8D]/30"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -119,15 +119,15 @@ export const RouteBar: React.FC = () => {
                   }}
                   className={`p-3.5 rounded-g2 text-left border transition flex flex-col gap-1 ${
                     exp.id === activeExpId
-                      ? 'bg-white/10 border-white/30 text-white'
-                      : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.08] text-obsidian-300'
+                      ? 'bg-[#2F4156] border-[#C8D9E6]/60 text-white'
+                      : 'bg-[#131d27]/50 border-[#567C8D]/20 hover:bg-[#2F4156]/40 text-[#C8D9E6]'
                   }`}
                 >
-                  <div className="text-[10px] tracking-wider uppercase text-obsidian-400 font-sans font-semibold">
+                  <div className="text-[10px] tracking-wider uppercase text-[#C8D9E6] font-sans font-semibold">
                     {exp.category}
                   </div>
                   <div className="text-sm font-medium text-white">{exp.title}</div>
-                  <div className="text-xs text-obsidian-300 line-clamp-2 leading-relaxed font-serif">
+                  <div className="text-xs text-[#C8D9E6]/80 line-clamp-2 leading-relaxed font-serif">
                     {exp.aim}
                   </div>
                 </button>

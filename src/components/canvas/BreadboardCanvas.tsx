@@ -89,8 +89,8 @@ export const BreadboardCanvas: React.FC = () => {
       ctx.save();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Black background
-      ctx.fillStyle = '#000000';
+      // Deep Navy background
+      ctx.fillStyle = '#131d27';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Apply viewport transformation
@@ -99,7 +99,7 @@ export const BreadboardCanvas: React.FC = () => {
       ctx.scale(viewport.scale, viewport.scale);
 
       // -------------------------------------------------------------
-      // 1. DRAW BREADBOARD BODY (Obsidian-Porcelain Monochrome)
+      // 1. DRAW BREADBOARD BODY (Warm Beige #F5EFEB Faceplate)
       // -------------------------------------------------------------
       const dims = defaultGrid.dimensions;
       const bbX = dims.originX - 45;
@@ -108,12 +108,12 @@ export const BreadboardCanvas: React.FC = () => {
       const bbH = dims.height;
 
       // Outer shadow
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
+      ctx.shadowColor = 'rgba(19, 29, 39, 0.4)';
       ctx.shadowBlur = 32;
       ctx.shadowOffsetY = 8;
 
-      // Breadboard body: refined off-white porcelain
-      ctx.fillStyle = '#ebedf2';
+      // Breadboard body: refined warm beige #F5EFEB
+      ctx.fillStyle = '#F5EFEB';
       ctx.beginPath();
       ctx.roundRect(bbX, bbY, bbW, bbH, 20); // G2-style smooth curve
       ctx.fill();
@@ -123,13 +123,13 @@ export const BreadboardCanvas: React.FC = () => {
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      // Board border
-      ctx.strokeStyle = '#cfd3dd';
+      // Board border: Sky Blue / Slate Teal
+      ctx.strokeStyle = '#C8D9E6';
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Center Divider Trench (DIP Gutter)
-      ctx.fillStyle = '#0d0f14';
+      // Center Divider Trench (DIP Gutter): Deep Navy #1b2735
+      ctx.fillStyle = '#1b2735';
       ctx.fillRect(bbX + 15, 222, bbW - 30, 8);
 
       // Power Rails Color Stripes
@@ -168,9 +168,9 @@ export const BreadboardCanvas: React.FC = () => {
       ctx.fillText('−', bbX + 16, 418);
 
       // -------------------------------------------------------------
-      // 2. SILK-SCREEN NUMBERS & LETTERS
+      // 2. SILK-SCREEN NUMBERS & LETTERS (Slate Teal #567C8D)
       // -------------------------------------------------------------
-      ctx.fillStyle = '#787f8f';
+      ctx.fillStyle = '#567C8D';
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -199,8 +199,8 @@ export const BreadboardCanvas: React.FC = () => {
       // 3. INTERNAL BUS TRACKS (X-Ray layer)
       // -------------------------------------------------------------
       if (layers.internalTracks) {
-        ctx.fillStyle = 'rgba(34, 38, 49, 0.15)';
-        ctx.strokeStyle = 'rgba(82, 88, 102, 0.4)';
+        ctx.fillStyle = 'rgba(86, 124, 141, 0.15)';
+        ctx.strokeStyle = 'rgba(86, 124, 141, 0.4)';
         ctx.lineWidth = 1;
 
         for (let r = 1; r <= 63; r++) {
@@ -213,21 +213,21 @@ export const BreadboardCanvas: React.FC = () => {
       }
 
       // -------------------------------------------------------------
-      // 4. DRAW BREADBOARD HOLES
+      // 4. DRAW BREADBOARD HOLES (Navy #2F4156 with Teal #567C8D rim)
       // -------------------------------------------------------------
       for (const hole of defaultGrid.holes.values()) {
-        ctx.fillStyle = '#06070a';
+        ctx.fillStyle = '#2F4156';
         ctx.beginPath();
         ctx.rect(hole.x - 3.5, hole.y - 3.5, 7, 7);
         ctx.fill();
 
-        ctx.strokeStyle = '#b9bcc7';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#567C8D';
+        ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 
       // -------------------------------------------------------------
-      // 5. PULSING AR NAVIGATION TARGET RINGS (Pure White/Silver)
+      // 5. PULSING AR NAVIGATION TARGET RINGS (Sky Blue #C8D9E6)
       // -------------------------------------------------------------
       if (currentStep && currentStep.highlightHoles.length > 0) {
         const pulseScale = 1 + 0.35 * Math.sin(pulseAngle);
@@ -238,13 +238,13 @@ export const BreadboardCanvas: React.FC = () => {
           if (!hole) continue;
 
           ctx.save();
-          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.strokeStyle = `rgba(200, 217, 230, ${alpha})`;
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.arc(hole.x, hole.y, 14 * pulseScale, 0, Math.PI * 2);
           ctx.stroke();
 
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.fillStyle = 'rgba(200, 217, 230, 0.25)';
           ctx.fill();
           ctx.restore();
         }
@@ -307,28 +307,28 @@ export const BreadboardCanvas: React.FC = () => {
           const icH = 28;
 
           ctx.save();
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowColor = 'rgba(19, 29, 39, 0.6)';
           ctx.shadowBlur = 10;
-          ctx.fillStyle = '#171a22'; // Obsidian package
+          ctx.fillStyle = '#1b2735'; // Dark Navy package
           ctx.beginPath();
           ctx.roundRect(icX, icY, icW, icH, 5);
           ctx.fill();
           ctx.restore();
 
           // Semicircular Orientation Notch
-          ctx.fillStyle = '#06070a';
+          ctx.fillStyle = '#131d27';
           ctx.beginPath();
           ctx.arc(icX, icY + icH / 2, 4, -Math.PI / 2, Math.PI / 2);
           ctx.fill();
 
           // Pin 1 Index Dot
-          ctx.fillStyle = '#525866';
+          ctx.fillStyle = '#C8D9E6';
           ctx.beginPath();
           ctx.arc(icX + 10, icY + icH - 6, 2.5, 0, Math.PI * 2);
           ctx.fill();
 
           // Laser-Etched Model Label
-          ctx.fillStyle = '#cfd3dd';
+          ctx.fillStyle = '#F5EFEB';
           ctx.font = 'bold 9px "JetBrains Mono", monospace';
           ctx.textAlign = 'center';
           const label = ic.model.startsWith('NE') ? ic.model : `SN${ic.model}N`;
@@ -338,7 +338,7 @@ export const BreadboardCanvas: React.FC = () => {
           for (const [pinNumStr, hId] of Object.entries(ic.pinHoles)) {
             const h = defaultGrid.getHole(String(hId));
             if (!h) continue;
-            ctx.fillStyle = '#a3a9b7';
+            ctx.fillStyle = '#567C8D';
             const isTop = Number(pinNumStr) > bottomPinsCount;
             const py = isTop ? icY - 5 : icY + icH;
             ctx.fillRect(h.x - 2, py, 4, 5);
@@ -419,7 +419,7 @@ export const BreadboardCanvas: React.FC = () => {
           const angle = Math.atan2(hB.y - hA.y, hB.x - hA.x);
           ctx.rotate(angle);
 
-          ctx.fillStyle = '#cfd3dd';
+          ctx.fillStyle = '#F5EFEB'; // Warm Beige resistor body
           ctx.beginPath();
           ctx.roundRect(-14, -5, 28, 10, 3);
           ctx.fill();
@@ -428,11 +428,11 @@ export const BreadboardCanvas: React.FC = () => {
             orange: '#ea580c',
             brown: '#78350f',
             gold: '#eab308',
-            black: '#0f172a',
+            black: '#131d27',
             red: '#dc2626',
           };
           res.bands.forEach((bName: string, idx: number) => {
-            ctx.fillStyle = bandColors[bName] || '#000';
+            ctx.fillStyle = bandColors[bName] || '#131d27';
             ctx.fillRect(-10 + idx * 6, -5, 2.5, 10);
           });
           ctx.restore();
@@ -451,7 +451,7 @@ export const BreadboardCanvas: React.FC = () => {
             ctx.save();
             const glowGrad = ctx.createRadialGradient(ledX, ledY, 4, ledX, ledY, 26);
             glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-            glowGrad.addColorStop(0.5, 'rgba(207, 211, 221, 0.4)');
+            glowGrad.addColorStop(0.5, 'rgba(200, 217, 230, 0.5)');
             glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = glowGrad;
             ctx.beginPath();
@@ -460,7 +460,7 @@ export const BreadboardCanvas: React.FC = () => {
             ctx.restore();
           }
 
-          ctx.fillStyle = led.isLit ? '#ffffff' : '#353a47';
+          ctx.fillStyle = led.isLit ? '#ffffff' : '#2F4156';
           ctx.beginPath();
           ctx.arc(ledX, ledY, 8, 0, Math.PI * 2);
           ctx.fill();

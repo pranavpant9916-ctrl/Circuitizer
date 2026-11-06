@@ -54,22 +54,22 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-[#0d0f14] border border-white/15 rounded-g2-xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 bg-[#131d27]/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-lg p-5 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 text-[#F5EFEB]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/25">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white border border-white/10">
+            <div className="w-8 h-8 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40">
               <Bot className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2 font-serif">
                 <span>AI Circuit Synthesizer</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-obsidian-200 font-mono font-medium">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F4156] text-[#C8D9E6] font-mono font-medium border border-[#567C8D]/40">
                   DRC Verified
                 </span>
               </h3>
-              <p className="text-[11px] text-obsidian-300 font-serif">
+              <p className="text-[11px] text-[#C8D9E6]/80 font-serif">
                 Enter any circuit requirement. The AI will route the breadboard and synthesize the truth table.
               </p>
             </div>
@@ -77,7 +77,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+            className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] flex items-center justify-center text-[#C8D9E6] hover:text-white transition border border-[#567C8D]/30"
           >
             <X className="w-4 h-4" />
           </button>
@@ -85,7 +85,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
         {/* Input Text Area */}
         <div className="flex flex-col gap-2">
-          <label className="text-[11px] font-sans font-semibold uppercase tracking-wider text-obsidian-400">
+          <label className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
             Circuit Requirement
           </label>
           <div className="relative">
@@ -94,14 +94,14 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="e.g. Design a 3-input majority voter circuit that lights up an LED when at least 2 inputs vote HIGH..."
               rows={3}
-              className="w-full bg-white/[0.03] border border-white/10 rounded-g2 p-3 text-xs text-white placeholder:text-obsidian-400 focus:outline-none focus:border-white/30 resize-none font-serif leading-relaxed"
+              className="w-full bg-[#131d27]/70 border border-[#567C8D]/35 rounded-g2 p-3 text-xs text-[#F5EFEB] placeholder:text-[#C8D9E6]/50 focus:outline-none focus:border-[#C8D9E6] resize-none font-serif leading-relaxed"
             />
           </div>
         </div>
 
         {/* Quick Suggestion Chips */}
         <div className="flex flex-col gap-1.5">
-          <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-obsidian-400">
+          <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
             Suggested Circuits
           </div>
           <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
@@ -113,9 +113,9 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                   handleGenerate(q);
                 }}
                 disabled={isSynthesizing}
-                className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-[11px] text-obsidian-200 border border-white/10 font-serif transition flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[11px] text-[#C8D9E6] border border-[#567C8D]/40 font-serif transition flex items-center gap-1.5"
               >
-                <Sparkles className="w-3 h-3 text-obsidian-300" />
+                <Sparkles className="w-3 h-3 text-[#C8D9E6]" />
                 <span>{q}</span>
               </button>
             ))}
@@ -124,15 +124,15 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
         {/* Status / Generating indicator */}
         {statusMessage && (
-          <div className="bg-white/5 border border-white/10 p-2.5 rounded-g2 text-xs text-white flex items-center gap-2 font-serif">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+          <div className="bg-[#131d27]/80 border border-[#567C8D]/40 p-2.5 rounded-g2 text-xs text-[#F5EFEB] flex items-center gap-2 font-serif">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#C8D9E6]" />
             <span>{statusMessage}</span>
           </div>
         )}
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-          <div className="text-[10px] text-obsidian-400 font-serif flex items-center gap-1.5">
+        <div className="flex items-center justify-between pt-2 border-t border-[#567C8D]/25">
+          <div className="text-[10px] text-[#C8D9E6]/70 font-serif flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5" />
             <span>Enforces zero dead-shorts & TI DIP standards</span>
           </div>
@@ -140,7 +140,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
           <button
             onClick={() => handleGenerate()}
             disabled={isSynthesizing || !prompt.trim()}
-            className="px-4 py-2 bg-white text-black hover:bg-obsidian-100 disabled:opacity-40 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg transition active:scale-95"
+            className="px-4 py-2 bg-[#C8D9E6] text-[#131d27] hover:bg-white disabled:opacity-40 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg transition active:scale-95"
           >
             {isSynthesizing ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />

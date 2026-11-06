@@ -46,8 +46,8 @@ export const FloatingControls: React.FC = () => {
     <div className="absolute right-4 top-20 z-30 flex flex-col items-end gap-2 pointer-events-auto">
       {/* Layers Menu Popover */}
       {showLayerMenu && (
-        <div className="bg-[#0d0f14]/95 backdrop-blur-xl border border-white/10 p-3 rounded-g2 shadow-2xl flex flex-col gap-2 min-w-[180px] animate-in fade-in slide-in-from-right-2">
-          <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-obsidian-400 px-1">
+        <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 p-3 rounded-g2 shadow-2xl flex flex-col gap-2 min-w-[180px] animate-in fade-in slide-in-from-right-2 text-[#F5EFEB]">
+          <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] px-1">
             Visual Layers
           </div>
 
@@ -55,8 +55,8 @@ export const FloatingControls: React.FC = () => {
             onClick={() => toggleLayer('realistic')}
             className={`flex items-center justify-between p-2 rounded-g2-sm text-xs font-medium transition ${
               layers.realistic
-                ? 'bg-white text-black font-semibold'
-                : 'text-obsidian-300 hover:bg-white/5'
+                ? 'bg-[#2F4156] text-white font-semibold border border-[#567C8D]/40'
+                : 'text-[#C8D9E6]/70 hover:bg-[#2F4156]/40'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -70,8 +70,8 @@ export const FloatingControls: React.FC = () => {
             onClick={() => toggleLayer('internalTracks')}
             className={`flex items-center justify-between p-2 rounded-g2-sm text-xs font-medium transition ${
               layers.internalTracks
-                ? 'bg-white text-black font-semibold'
-                : 'text-obsidian-300 hover:bg-white/5'
+                ? 'bg-[#2F4156] text-white font-semibold border border-[#567C8D]/40'
+                : 'text-[#C8D9E6]/70 hover:bg-[#2F4156]/40'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -85,8 +85,8 @@ export const FloatingControls: React.FC = () => {
             onClick={() => toggleLayer('signalTraffic')}
             className={`flex items-center justify-between p-2 rounded-g2-sm text-xs font-medium transition ${
               layers.signalTraffic
-                ? 'bg-white text-black font-semibold'
-                : 'text-obsidian-300 hover:bg-white/5'
+                ? 'bg-[#2F4156] text-white font-semibold border border-[#567C8D]/40'
+                : 'text-[#C8D9E6]/70 hover:bg-[#2F4156]/40'
             }`}
           >
             <span className="flex items-center gap-2">
@@ -99,12 +99,12 @@ export const FloatingControls: React.FC = () => {
       )}
 
       {/* Floating Action Button Pill */}
-      <div className="flex flex-col gap-1.5 bg-[#0d0f14]/85 backdrop-blur-xl border border-white/10 p-1.5 rounded-full shadow-2xl">
+      <div className="flex flex-col gap-1.5 bg-[#1b2735]/90 backdrop-blur-xl border border-[#567C8D]/35 p-1.5 rounded-full shadow-2xl">
         {/* Toggle Probe Mode */}
         <button
           onClick={toggleProbeMode}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-            isProbeMode ? 'bg-white text-black shadow-md' : 'text-obsidian-300 hover:bg-white/10 hover:text-white'
+            isProbeMode ? 'bg-[#C8D9E6] text-[#131d27] shadow-md font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
           }`}
           title="Multimeter / Logic Probe"
         >
@@ -115,7 +115,7 @@ export const FloatingControls: React.FC = () => {
         <button
           onClick={toggleAnalyzer}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-            isAnalyzerOpen ? 'bg-white text-black shadow-md' : 'text-obsidian-300 hover:bg-white/10 hover:text-white'
+            isAnalyzerOpen ? 'bg-[#C8D9E6] text-[#131d27] shadow-md font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
           }`}
           title="Waveform Analyzer / Oscilloscope"
         >
@@ -126,7 +126,7 @@ export const FloatingControls: React.FC = () => {
         <button
           onClick={() => setShowLayerMenu(!showLayerMenu)}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-            showLayerMenu ? 'bg-white text-black' : 'text-obsidian-300 hover:bg-white/10 hover:text-white'
+            showLayerMenu ? 'bg-[#C8D9E6] text-[#131d27] font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
           }`}
           title="Layers"
         >
@@ -136,18 +136,18 @@ export const FloatingControls: React.FC = () => {
         {/* Recenter */}
         <button
           onClick={handleRecenter}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-obsidian-300 hover:bg-white/10 hover:text-white transition"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white transition"
           title="Recenter"
         >
           <LocateFixed className="w-4 h-4" />
         </button>
 
-        <div className="h-px bg-white/10 mx-1 my-0.5" />
+        <div className="h-px bg-[#567C8D]/30 mx-1 my-0.5" />
 
         {/* Zoom In */}
         <button
           onClick={() => handleZoom(1.2)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-obsidian-300 hover:bg-white/10 hover:text-white transition"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white transition"
           title="Zoom In"
         >
           <Plus className="w-4 h-4" />
@@ -156,7 +156,7 @@ export const FloatingControls: React.FC = () => {
         {/* Zoom Out */}
         <button
           onClick={() => handleZoom(0.8)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-obsidian-300 hover:bg-white/10 hover:text-white transition"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white transition"
           title="Zoom Out"
         >
           <Minus className="w-4 h-4" />

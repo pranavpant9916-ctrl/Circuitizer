@@ -32,7 +32,7 @@ export const LogicAnalyzerDock: React.FC = () => {
     return () => clearInterval(timer);
   }, [isSimRunning, clockHz, stepClock]);
 
-  // Draw Waveforms on Canvas using the Monochrome Obsidian Palette
+  // Draw Waveforms on Canvas using the Navy, Teal, Sky Blue, Beige, White Palette
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || isMinimized) return;
@@ -44,11 +44,11 @@ export const LogicAnalyzerDock: React.FC = () => {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Pure black background matching the palette
-    ctx.fillStyle = '#06070a';
+    // Deep Navy background
+    ctx.fillStyle = '#131d27';
     ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = '#1e2029';
+    ctx.strokeStyle = '#2F4156';
     ctx.lineWidth = 1;
     // Horizontal track separators (4 channels: CLK, A, B, Y)
     const channelHeight = height / 4;
@@ -61,12 +61,12 @@ export const LogicAnalyzerDock: React.FC = () => {
 
     if (waveforms.length < 2) return;
 
-    // Palette shades from the image
+    // Palette channels
     const channels = [
-      { name: 'CLK', color: '#ffffff', key: 'clk' },
-      { name: 'A', color: '#cfd3dd', key: 'inputA' },
-      { name: 'B', color: '#a3a9b7', key: 'inputB' },
-      { name: 'OUT Y', color: '#ffffff', key: 'outY' },
+      { name: 'CLK', color: '#FFFFFF', key: 'clk' },
+      { name: 'A', color: '#C8D9E6', key: 'inputA' },
+      { name: 'B', color: '#567C8D', key: 'inputB' },
+      { name: 'OUT Y', color: '#F5EFEB', key: 'outY' },
     ];
 
     const stepWidth = Math.max(12, width / 28);
@@ -78,7 +78,7 @@ export const LogicAnalyzerDock: React.FC = () => {
       ctx.save();
       ctx.strokeStyle = ch.color;
       ctx.lineWidth = 2;
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
+      ctx.shadowColor = ch.color === '#FFFFFF' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(200, 217, 230, 0.3)';
       ctx.shadowBlur = 4;
 
       ctx.beginPath();
@@ -101,7 +101,7 @@ export const LogicAnalyzerDock: React.FC = () => {
       ctx.restore();
 
       // Channel label
-      ctx.fillStyle = '#787f8f';
+      ctx.fillStyle = '#C8D9E6';
       ctx.font = '500 9px "JetBrains Mono", monospace';
       ctx.fillText(ch.name, 8, topY + 12);
     });
@@ -109,12 +109,12 @@ export const LogicAnalyzerDock: React.FC = () => {
 
   return (
     <div className="absolute left-4 right-4 bottom-32 z-20 pointer-events-auto">
-      <div className="bg-[#0d0f14]/90 backdrop-blur-xl border border-white/10 rounded-g2-xl shadow-2xl overflow-hidden">
+      <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl shadow-2xl overflow-hidden text-[#F5EFEB]">
         {/* Dock Header */}
-        <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-white/10 bg-black/40">
+        <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[#567C8D]/30 bg-[#131d27]/70">
           <div className="flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-white" />
-            <span className="text-xs font-semibold text-white tracking-tight">
+            <Activity className="w-3.5 h-3.5 text-[#C8D9E6]" />
+            <span className="text-xs font-semibold text-white tracking-tight font-serif">
               Waveform Analyzer
             </span>
           </div>
@@ -125,8 +125,8 @@ export const LogicAnalyzerDock: React.FC = () => {
               onClick={toggleSimulation}
               className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
                 isSimRunning
-                  ? 'bg-white text-black font-semibold'
-                  : 'bg-white/10 text-white hover:bg-white/15'
+                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                  : 'bg-[#2F4156] text-[#C8D9E6] hover:bg-[#3e546e] border border-[#567C8D]/40'
               }`}
             >
               {isSimRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
@@ -136,7 +136,7 @@ export const LogicAnalyzerDock: React.FC = () => {
             {/* Single Step Pulse */}
             <button
               onClick={stepClock}
-              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-200 hover:text-white transition"
+              className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] flex items-center justify-center text-[#C8D9E6] hover:text-white transition border border-[#567C8D]/30"
               title="Step Clock Pulse"
             >
               <RotateCw className="w-3.5 h-3.5" />
@@ -145,7 +145,7 @@ export const LogicAnalyzerDock: React.FC = () => {
             {/* Minimize / Expand */}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+              className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] flex items-center justify-center text-[#C8D9E6] hover:text-white transition border border-[#567C8D]/30"
               title={isMinimized ? 'Expand' : 'Collapse'}
             >
               {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -154,7 +154,7 @@ export const LogicAnalyzerDock: React.FC = () => {
             {/* Close Dock */}
             <button
               onClick={toggleAnalyzer}
-              className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-obsidian-300 hover:text-white transition"
+              className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] flex items-center justify-center text-[#C8D9E6] hover:text-white transition border border-[#567C8D]/30"
               title="Close Waveform Analyzer"
             >
               <X className="w-3.5 h-3.5" />
@@ -166,7 +166,7 @@ export const LogicAnalyzerDock: React.FC = () => {
         {!isMinimized && (
           <div className="p-3 flex flex-col gap-2.5">
             {/* Waveform Canvas */}
-            <div className="w-full h-24 bg-[#06070a] rounded-g2 overflow-hidden border border-white/5">
+            <div className="w-full h-24 bg-[#131d27] rounded-g2 overflow-hidden border border-[#567C8D]/30">
               <canvas
                 ref={canvasRef}
                 width={360}
@@ -178,7 +178,7 @@ export const LogicAnalyzerDock: React.FC = () => {
             {/* Input Switches & Frequency */}
             <div className="flex items-center justify-between gap-2 pt-0.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-obsidian-400">
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
                   Inputs:
                 </span>
                 {circuitState.switches.map((sw: PlacedSwitch) => (
@@ -187,14 +187,14 @@ export const LogicAnalyzerDock: React.FC = () => {
                     onClick={() => toggleSwitch(sw.id)}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border transition ${
                       sw.isClosed
-                        ? 'bg-white text-black font-semibold border-white'
-                        : 'bg-white/5 border-white/10 text-obsidian-300 hover:bg-white/10 hover:text-white'
+                        ? 'bg-[#C8D9E6] text-[#131d27] font-semibold border-[#C8D9E6]'
+                        : 'bg-[#2F4156] border-[#567C8D]/40 text-[#C8D9E6] hover:bg-[#3e546e]'
                     }`}
                   >
                     {sw.isClosed ? (
-                      <ToggleRight className="w-3.5 h-3.5 text-black" />
+                      <ToggleRight className="w-3.5 h-3.5 text-[#131d27]" />
                     ) : (
-                      <ToggleLeft className="w-3.5 h-3.5 text-obsidian-400" />
+                      <ToggleLeft className="w-3.5 h-3.5 text-[#567C8D]" />
                     )}
                     <span>{sw.label}: {sw.isClosed ? 'HIGH' : 'LOW'}</span>
                   </button>
@@ -205,12 +205,12 @@ export const LogicAnalyzerDock: React.FC = () => {
               <select
                 value={clockHz}
                 onChange={(e) => setClockHz(Number(e.target.value))}
-                className="bg-white/5 border border-white/10 text-obsidian-200 text-xs rounded-full px-2.5 py-1 focus:outline-none focus:border-white/30 font-mono"
+                className="bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] text-xs rounded-full px-2.5 py-1 focus:outline-none focus:border-[#C8D9E6] font-mono"
               >
-                <option value={0.5} className="bg-[#0d0f14] text-white">0.5 Hz</option>
-                <option value={1} className="bg-[#0d0f14] text-white">1.0 Hz</option>
-                <option value={2} className="bg-[#0d0f14] text-white">2.0 Hz</option>
-                <option value={5} className="bg-[#0d0f14] text-white">5.0 Hz</option>
+                <option value={0.5} className="bg-[#1b2735] text-white">0.5 Hz</option>
+                <option value={1} className="bg-[#1b2735] text-white">1.0 Hz</option>
+                <option value={2} className="bg-[#1b2735] text-white">2.0 Hz</option>
+                <option value={5} className="bg-[#1b2735] text-white">5.0 Hz</option>
               </select>
             </div>
           </div>

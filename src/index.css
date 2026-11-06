@@ -14,8 +14,8 @@ html, body, #root {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  background-color: #000000;
-  color: #f2f4f8;
+  background-color: #131d27;
+  color: #F5EFEB;
   overflow: hidden;
   font-family: 'Bookerly', 'Literata', 'Georgia', 'Cambria', serif;
   -webkit-font-smoothing: antialiased;
@@ -27,18 +27,18 @@ html, body, #root {
   corner-smoothing: 0.6;
 }
 
-/* Custom scrollbars matching obsidian palette */
+/* Custom scrollbars matching Navy & Teal palette */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #1b2735;
 }
 ::-webkit-scrollbar-thumb {
-  background: #353a47;
+  background: #567C8D;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #525866;
+  background: #C8D9E6;
 }

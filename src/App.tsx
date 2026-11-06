@@ -12,7 +12,7 @@ export const App: React.FC = () => {
   const { activeMode } = useCircuitStore();
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-black font-serif antialiased select-none">
+    <main className="relative w-screen h-screen overflow-hidden bg-[#131d27] font-serif antialiased select-none">
       {/* 1. Spatial Breadboard Map Canvas */}
       <BreadboardCanvas />
 
