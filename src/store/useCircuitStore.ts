@@ -55,6 +55,7 @@ interface CircuitStoreState {
     signalTraffic: boolean;
   };
   activeMode: 'GUIDE' | 'SCAN_CAMERA';
+  viewMode: 'BREADBOARD' | 'BOOLEAN_DIAGRAM';
 
   // Interactive Probe Mode
   isProbeMode: boolean;
@@ -92,6 +93,10 @@ interface CircuitStoreState {
   // Probe actions
   toggleProbeMode: () => void;
   probeHole: (holeId: string | null) => void;
+
+  // View toggle action
+  setViewMode: (mode: 'BREADBOARD' | 'BOOLEAN_DIAGRAM') => void;
+  toggleViewMode: () => void;
 
   // Waveform Analyzer Dock
   isAnalyzerOpen: boolean;
@@ -160,6 +165,12 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     },
 
     activeMode: 'GUIDE',
+    viewMode: 'BREADBOARD',
+
+    setViewMode: (mode) => set({ viewMode: mode }),
+    toggleViewMode: () => set((state) => ({
+      viewMode: state.viewMode === 'BREADBOARD' ? 'BOOLEAN_DIAGRAM' : 'BREADBOARD',
+    })),
 
     isProbeMode: false,
     probedNet: null,
@@ -325,7 +336,16 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       // Keep last 30 waveform transitions for crisp display
       const updatedWaveforms = [...waveforms, newPoint].slice(-30);
 
+      const updatedLeds = circuitState.leds.map((led: PlacedLED) => ({
+        ...led,
+        isLit: result.ledStates[led.id] ?? led.isLit,
+      }));
+
       set({
+        circuitState: {
+          ...circuitState,
+          leds: updatedLeds,
+        },
         isDeadShort: result.isDeadShort,
         waveforms: updatedWaveforms,
       });

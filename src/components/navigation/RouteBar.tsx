@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { AICircuitCopilot } from './AICircuitCopilot';
-import { AlertCircle, Camera, ChevronDown, Compass, Cpu, Sparkles, X } from 'lucide-react';
+import { AlertCircle, Camera, ChevronDown, Compass, Cpu, Grid, Sparkles, X, Zap } from 'lucide-react';
 
 export const RouteBar: React.FC = () => {
   const {
@@ -10,6 +10,8 @@ export const RouteBar: React.FC = () => {
     selectExperiment,
     activeMode,
     setMode,
+    viewMode,
+    setViewMode,
     isDeadShort,
   } = useCircuitStore();
 
@@ -41,16 +43,46 @@ export const RouteBar: React.FC = () => {
             </div>
           </button>
 
-          {/* AI Synthesizer Action Pill */}
+          {/* AI Aim Evaluator & Feasibility Action Pill */}
           <button
             onClick={() => setShowCopilot(true)}
             className="px-3 py-1.5 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#F5EFEB] border border-[#567C8D]/40 text-xs font-medium flex items-center gap-1.5 transition shadow-sm shrink-0"
-            title="Synthesize custom circuit with AI"
+            title="Evaluate lab aim feasibility and generate step roadmap"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
-            <span className="hidden sm:inline">AI Synthesizer</span>
-            <span className="sm:hidden">AI</span>
+            <span className="hidden sm:inline">AI Aim Evaluator</span>
+            <span className="sm:hidden">AI Aim</span>
           </button>
+
+          {/* Single-Toggle: Breadboard vs Boolean Diagram */}
+          <div className="flex items-center bg-[#131d27]/80 p-1 rounded-full border border-[#567C8D]/30 shrink-0">
+            <button
+              onClick={() => setViewMode('BREADBOARD')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
+                viewMode === 'BREADBOARD'
+                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                  : 'text-[#C8D9E6]/70 hover:text-white'
+              }`}
+              title="Switch to physical 830-tie breadboard layout"
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Breadboard</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode('BOOLEAN_DIAGRAM')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
+                viewMode === 'BOOLEAN_DIAGRAM'
+                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                  : 'text-[#C8D9E6]/70 hover:text-white'
+              }`}
+              title="Switch to IEEE Boolean logic diagram"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Boolean Diagram</span>
+              <span className="sm:hidden">Diagram</span>
+            </button>
+          </div>
 
           {/* Mode Switcher: Guide vs Scan */}
           <div className="flex items-center bg-[#131d27]/80 p-1 rounded-full border border-[#567C8D]/30 shrink-0">
