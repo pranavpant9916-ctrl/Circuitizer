@@ -1,6 +1,7 @@
 import { Experiment, ApparatusItem } from '../types/experiment';
 import { AICircuitGenerator } from './aiCircuitGenerator';
 import { EXPERIMENTS } from './experiments';
+import { BooleanCompiler } from './booleanCompiler';
 
 export interface AimStepSummary {
   stepNumber: number;
@@ -95,7 +96,51 @@ export class AimEvaluator {
       return this.buildResultFromExperiment(raw, knownExp, 'ACCEPTED', 'Feasible on 830-Tie Breadboard (5V TTL)');
     }
 
-    // 4. Synthesize via Dynamic AI Circuit Generator
+    // 4. Arbitrary Boolean Logic Compiler (Equation Parsing & Hardware Mapping)
+    const hasBooleanSyntax =
+      raw.includes('=') ||
+      raw.includes('•') ||
+      raw.includes('+') ||
+      raw.includes('*') ||
+      raw.includes('^') ||
+      raw.includes("'") ||
+      raw.includes('!') ||
+      raw.includes('~') ||
+      q.includes('xor') ||
+      q.includes('nand') ||
+      q.includes('nor') ||
+      q.includes('xnor');
+
+    if (hasBooleanSyntax && !q.includes('motor') && !q.includes('cpu')) {
+      try {
+        const compiled = BooleanCompiler.compile(raw);
+        if (compiled.variables.length > 0 && compiled.gateOps.length > 0) {
+          const stepRoadmap: AimStepSummary[] = compiled.experiment.steps.map((st, idx) => ({
+            stepNumber: idx + 1,
+            title: st.title,
+            category: AimEvaluator.categorizeStep(st.title, idx),
+            instruction: st.instruction,
+          }));
+
+          return {
+            isAcceptable: true,
+            verdict: 'ACCEPTED',
+            aim: raw,
+            verdictTitle: 'Compiled Custom Boolean Logic (DRC Verified)',
+            reasoning: `Your Boolean equation ${compiled.normalizedExpression} with ${compiled.variables.length} variable(s) (${compiled.variables.join(', ')}) was compiled into ${compiled.gateOps.length} gate operation(s) across ${compiled.requiredICs.length} DIP IC(s).`,
+            booleanFormula: compiled.normalizedExpression,
+            totalStepsCount: compiled.experiment.steps.length,
+            apparatus: compiled.apparatus,
+            stepRoadmap,
+            experiment: compiled.experiment,
+          };
+        }
+      } catch {
+        // Fall through to semantic synthesizer
+      }
+    }
+
+    // 5. Synthesize via Dynamic AI Circuit Generator
     // Check if the aim mentions valid digital / analog concepts
     const isDigitalLogic =
       q.includes('gate') ||

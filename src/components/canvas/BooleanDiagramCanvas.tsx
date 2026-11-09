@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { LogicLevel } from '../../types/circuit';
+import { BooleanCompiler } from '../../engine/booleanCompiler';
 import { Info, Sparkles, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 
 interface GateNode {
   id: string;
-  type: 'AND' | 'OR' | 'NOT' | 'NAND' | 'NOR' | 'XOR' | '555' | 'JK_FF';
+  type: 'AND' | 'OR' | 'NOT' | 'NAND' | 'NOR' | 'XOR' | 'XNOR' | '555' | 'JK_FF';
   x: number;
   y: number;
   inputs: { label: string; wireX: number; wireY: number; level: LogicLevel }[];
@@ -337,6 +338,86 @@ export const BooleanDiagramCanvas: React.FC = () => {
       };
     }
 
+    // 8. Arbitrary Dynamic Boolean Compiler Evaluation Fallback
+    try {
+      let candidate = '';
+      if (activeExp?.title?.includes('Compiled Logic:')) {
+        candidate = activeExp.title.replace('Compiled Logic:', '').trim();
+      } else if (activeExp?.theory?.includes('Formula:') || activeExp?.theory?.includes('equation:')) {
+        const match = activeExp.theory.match(/(?:Formula|equation):\s*([^\.\n]+)/i);
+        if (match) candidate = match[1].trim();
+      }
+
+      if (candidate) {
+        const parsed = BooleanCompiler.parseExpression(candidate);
+        const ops = BooleanCompiler.linearizeGates(parsed.ast);
+
+        if (ops.length > 0) {
+          // Switch levels from live circuit switches
+          const env: Record<string, 0 | 1> = {};
+          parsed.variables.forEach((v) => {
+            const sw = circuitState.switches.find((s) => s.id === `sw-${v.toLowerCase()}`);
+            env[v] = sw?.isClosed ? 1 : 0;
+          });
+
+          const gateLevels: Record<string, LogicLevel> = {};
+          const numGates = ops.length;
+          const dynamicGates: GateNode[] = ops.map((op, idx) => {
+            const inLevels: LogicLevel[] = op.inputs.map((inp) => {
+              const inpStr = String(inp);
+              if (env[inpStr] !== undefined) return env[inpStr];
+              if (gateLevels[inpStr] !== undefined) return gateLevels[inpStr];
+              if (inpStr === '1') return 1;
+              if (inpStr === '0') return 0;
+              return 0;
+            });
+
+            let outLevel: LogicLevel = 0;
+            if (op.op === 'NOT') outLevel = inLevels[0] === 1 ? 0 : 1;
+            else if (op.op === 'AND') outLevel = inLevels.every((l) => l === 1) ? 1 : 0;
+            else if (op.op === 'OR') outLevel = inLevels.some((l) => l === 1) ? 1 : 0;
+            else if (op.op === 'XOR') outLevel = inLevels[0] !== inLevels[1] ? 1 : 0;
+            else if (op.op === 'NAND') outLevel = inLevels.every((l) => l === 1) ? 0 : 1;
+            else if (op.op === 'NOR') outLevel = inLevels.some((l) => l === 1) ? 0 : 1;
+            else if (op.op === 'XNOR') outLevel = inLevels[0] === inLevels[1] ? 1 : 0;
+            gateLevels[op.outputId] = outLevel;
+
+            const col = Math.floor(idx / 2);
+            const rowOffset = (idx % 2 === 0 ? -1 : 1) * 75;
+            const gateX = centerX - 120 + col * 170;
+            const gateY = numGates === 1 ? centerY : centerY + rowOffset;
+
+            return {
+              id: op.id,
+              type: op.op,
+              x: gateX,
+              y: gateY,
+              inputs: op.inputs.map((inp, iIdx) => ({
+                label: String(inp),
+                wireX: gateX - 110,
+                wireY: gateY + (iIdx === 0 ? -15 : 15),
+                level: inLevels[iIdx] ?? 0,
+              })),
+              output: {
+                label: op.outputLabel,
+                wireX: gateX + 90,
+                wireY: gateY,
+                level: outLevel,
+              },
+            };
+          });
+
+          return {
+            formula: parsed.formula,
+            title: activeExp?.title || 'Compiled Logic Schematic',
+            gates: dynamicGates,
+          };
+        }
+      }
+    } catch {
+      // Fall through to default
+    }
+
     // Default: 2-Input AND Gate (7408)
     const outAnd: LogicLevel = (swA === 1 && swB === 1) ? 1 : 0;
     return {
@@ -408,7 +489,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
         ctx.arc(x, y, h / 2, -Math.PI / 2, Math.PI / 2);
         ctx.lineTo(x - w / 2, y + h / 2);
         ctx.closePath();
-      } else if (type === 'OR' || type === 'NOR' || type === 'XOR') {
+      } else if (type === 'OR' || type === 'NOR' || type === 'XOR' || type === 'XNOR') {
         // Curved inward back, pointed shield front
         ctx.moveTo(x - w / 2, y - h / 2);
         ctx.quadraticCurveTo(x - w / 4, y, x - w / 2, y + h / 2);
@@ -426,16 +507,16 @@ export const BooleanDiagramCanvas: React.FC = () => {
       ctx.fill();
       ctx.stroke();
 
-      // Additional input arc for XOR Gate
-      if (type === 'XOR') {
+      // Additional input arc for XOR / XNOR Gate
+      if (type === 'XOR' || type === 'XNOR') {
         ctx.beginPath();
         ctx.moveTo(x - w / 2 - 8, y - h / 2);
         ctx.quadraticCurveTo(x - w / 4 - 8, y, x - w / 2 - 8, y + h / 2);
         ctx.stroke();
       }
 
-      // Inversion bubble for NAND, NOR, NOT
-      if (type === 'NAND' || type === 'NOR' || type === 'NOT') {
+      // Inversion bubble for NAND, NOR, NOT, XNOR
+      if (type === 'NAND' || type === 'NOR' || type === 'NOT' || type === 'XNOR') {
         const bubbleX = type === 'NOT' ? x + w / 3 + 4 : x + w / 2 + 5;
         ctx.beginPath();
         ctx.fillStyle = '#1b2735';

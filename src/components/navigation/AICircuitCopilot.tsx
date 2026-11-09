@@ -32,6 +32,11 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   const quickAims = [
+    { label: 'Equation: Y = A*B + C\'', query: 'Y = A*B + C\'' },
+    { label: 'Equation: Y = A\'B + AB\' (XOR)', query: 'Y = A\'B + AB\'' },
+    { label: 'Equation: Y = (A + B)(C + D)', query: 'Y = (A + B) * (C + D)' },
+    { label: 'Equation: Y = A ^ B + C', query: 'Y = A ^ B + C' },
+    { label: 'Equation: Y = !(A & B) + C', query: 'Y = !(A & B) + C' },
     { label: '2:1 Multiplexer (Mux)', query: 'To construct and verify a 2:1 multiplexer using IC 7404 and IC 7408 on breadboard' },
     { label: '3-Input Majority Voter', query: 'Design a 3-input majority voting circuit where LED turns ON when ≥ 2 inputs are HIGH' },
     { label: 'XOR from 4 NAND Gates', query: 'To synthesize an XOR logic gate using only IC 7400 Quad NAND gates' },
@@ -108,7 +113,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
               <textarea
                 value={aimInput}
                 onChange={(e) => setAimInput(e.target.value)}
-                placeholder="e.g. To construct and verify a 2:1 multiplexer using IC 7404 inverter and IC 7408 AND gates on breadboard..."
+                placeholder="e.g. Type custom Boolean equation 'Y = A*B + C'' or lab aim 'To construct a 2:1 multiplexer using 7404 and 7408 ICs'..."
                 rows={2}
                 className="w-full bg-[#131d27]/75 border border-[#567C8D]/40 rounded-g2 p-3 text-xs sm:text-sm text-[#F5EFEB] placeholder:text-[#C8D9E6]/40 focus:outline-none focus:border-[#C8D9E6] resize-none font-serif leading-relaxed"
               />
