@@ -30,3 +30,8 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Local Roadmaps & Private Planning
+*itinerary*
+*.plan.md
+*.local.md

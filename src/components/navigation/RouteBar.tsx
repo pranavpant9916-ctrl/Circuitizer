@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { AICircuitCopilot } from './AICircuitCopilot';
+import { DesmosExpressionBar } from './DesmosExpressionBar';
 import { AlertCircle, Camera, ChevronDown, Compass, Cpu, Grid, Sparkles, X, Zap } from 'lucide-react';
 
 export const RouteBar: React.FC = () => {
@@ -111,6 +112,9 @@ export const RouteBar: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Desmos-Style Live Logic Expression Bar */}
+        {activeMode === 'GUIDE' && <DesmosExpressionBar />}
 
         {/* Short Circuit Warning Alert */}
         {isDeadShort && (
