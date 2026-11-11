@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { LogicLevel } from '../../types/circuit';
 import { BooleanCompiler } from '../../engine/booleanCompiler';
@@ -23,19 +23,22 @@ export const BooleanDiagramCanvas: React.FC = () => {
   } = useCircuitStore();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [pulsePhase, setPulsePhase] = useState(0);
+  const pulsePhaseRef = useRef<number>(0);
 
   const activeExp = experiments.find((e) => e.id === activeExpId);
 
-  // Animation loop for signal pulse flow
+  // Resize canvas responsively with window
   useEffect(() => {
-    let animId: number;
-    const animate = () => {
-      setPulsePhase((prev) => (prev + 0.04) % 1);
-      animId = requestAnimationFrame(animate);
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = Math.max(400, window.innerHeight - 140);
+      }
     };
-    animId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animId);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Determine current input levels from circuit switches
@@ -439,199 +442,208 @@ export const BooleanDiagramCanvas: React.FC = () => {
     };
   };
 
-  // Main Schematic Rendering on Canvas
+  // Main Schematic Rendering Loop on Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+    let animId: number;
 
-    ctx.clearRect(0, 0, width, height);
+    const render = () => {
+      pulsePhaseRef.current = (pulsePhaseRef.current + 0.035) % 1;
+      const width = canvas.width;
+      const height = canvas.height;
 
-    // Deep Navy background (#131d27)
-    ctx.fillStyle = '#131d27';
-    ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
-    // Subtle coordinate grid dots (Teal #567C8D / Navy #2F4156)
-    ctx.fillStyle = 'rgba(86, 124, 141, 0.2)';
-    const gridStep = 24;
-    for (let x = 0; x < width; x += gridStep) {
-      for (let y = 0; y < height; y += gridStep) {
-        ctx.fillRect(x, y, 1.5, 1.5);
-      }
-    }
+      // Deep Navy background (#131d27)
+      ctx.fillStyle = '#131d27';
+      ctx.fillRect(0, 0, width, height);
 
-    const { gates } = deriveGates(width, height);
-
-    // Helper: Draw standard IEEE Logic Gate Symbol
-    const drawGateSymbol = (gate: GateNode) => {
-      const { type, x, y } = gate;
-      const w = 56;
-      const h = 48;
-
-      ctx.save();
-      ctx.strokeStyle = '#C8D9E6'; // Sky Blue border
-      ctx.lineWidth = 2.5;
-      ctx.fillStyle = '#1b2735';   // Dark Navy fill
-
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 8;
-
-      ctx.beginPath();
-
-      if (type === 'AND' || type === 'NAND') {
-        // Flat left edge, rounded right edge
-        ctx.moveTo(x - w / 2, y - h / 2);
-        ctx.lineTo(x, y - h / 2);
-        ctx.arc(x, y, h / 2, -Math.PI / 2, Math.PI / 2);
-        ctx.lineTo(x - w / 2, y + h / 2);
-        ctx.closePath();
-      } else if (type === 'OR' || type === 'NOR' || type === 'XOR' || type === 'XNOR') {
-        // Curved inward back, pointed shield front
-        ctx.moveTo(x - w / 2, y - h / 2);
-        ctx.quadraticCurveTo(x - w / 4, y, x - w / 2, y + h / 2);
-        ctx.quadraticCurveTo(x + w / 3, y + h / 2, x + w / 2, y);
-        ctx.quadraticCurveTo(x + w / 3, y - h / 2, x - w / 2, y - h / 2);
-        ctx.closePath();
-      } else if (type === 'NOT') {
-        // Triangle pointing right
-        ctx.moveTo(x - w / 2, y - h / 2);
-        ctx.lineTo(x + w / 3, y);
-        ctx.lineTo(x - w / 2, y + h / 2);
-        ctx.closePath();
+      // Subtle coordinate grid dots (Teal #567C8D / Navy #2F4156)
+      ctx.fillStyle = 'rgba(86, 124, 141, 0.2)';
+      const gridStep = 24;
+      for (let x = 0; x < width; x += gridStep) {
+        for (let y = 0; y < height; y += gridStep) {
+          ctx.fillRect(x, y, 1.5, 1.5);
+        }
       }
 
-      ctx.fill();
-      ctx.stroke();
+      const { gates } = deriveGates(width, height);
 
-      // Additional input arc for XOR / XNOR Gate
-      if (type === 'XOR' || type === 'XNOR') {
+      // Helper: Draw standard IEEE Logic Gate Symbol
+      const drawGateSymbol = (gate: GateNode) => {
+        const { type, x, y } = gate;
+        const w = 56;
+        const h = 48;
+
+        ctx.save();
+        ctx.strokeStyle = '#C8D9E6'; // Sky Blue border
+        ctx.lineWidth = 2.5;
+        ctx.fillStyle = '#1b2735';   // Dark Navy fill
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 8;
+
         ctx.beginPath();
-        ctx.moveTo(x - w / 2 - 8, y - h / 2);
-        ctx.quadraticCurveTo(x - w / 4 - 8, y, x - w / 2 - 8, y + h / 2);
-        ctx.stroke();
-      }
 
-      // Inversion bubble for NAND, NOR, NOT, XNOR
-      if (type === 'NAND' || type === 'NOR' || type === 'NOT' || type === 'XNOR') {
-        const bubbleX = type === 'NOT' ? x + w / 3 + 4 : x + w / 2 + 5;
-        ctx.beginPath();
-        ctx.fillStyle = '#1b2735';
-        ctx.arc(bubbleX, y, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
-
-      // Gate Model / Type Label
-      ctx.fillStyle = '#F5EFEB'; // Beige text
-      ctx.font = 'bold 10px "JetBrains Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(type, x - 2, y);
-
-      ctx.restore();
-    };
-
-    // Helper: Draw Orthogonal Wires with Logic State & Pulse Animation
-    const drawWire = (x1: number, y1: number, x2: number, y2: number, level: LogicLevel) => {
-      const isHigh = level === 1;
-
-      ctx.save();
-      ctx.strokeStyle = isHigh ? '#C8D9E6' : '#567C8D';
-      ctx.lineWidth = isHigh ? 2.5 : 1.5;
-
-      if (isHigh) {
-        ctx.shadowColor = 'rgba(200, 217, 230, 0.6)';
-        ctx.shadowBlur = 6;
-      }
-
-      // Orthogonal Manhattan step routing
-      const midX = (x1 + x2) / 2;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(midX, y1);
-      ctx.lineTo(midX, y2);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // Solder junction dots
-      ctx.fillStyle = isHigh ? '#FFFFFF' : '#567C8D';
-      ctx.beginPath();
-      ctx.arc(x1, y1, 3, 0, Math.PI * 2);
-      ctx.arc(x2, y2, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Animated traveling signal charge pulse when HIGH
-      if (isHigh) {
-        const t = pulsePhase;
-        let px = 0;
-        let py = 0;
-
-        const seg1 = Math.abs(midX - x1);
-        const seg2 = Math.abs(y2 - y1);
-        const seg3 = Math.abs(x2 - midX);
-        const total = seg1 + seg2 + seg3 || 1;
-
-        const curDist = t * total;
-        if (curDist <= seg1) {
-          px = x1 + (midX - x1) * (curDist / seg1);
-          py = y1;
-        } else if (curDist <= seg1 + seg2) {
-          px = midX;
-          py = y1 + (y2 - y1) * ((curDist - seg1) / seg2);
-        } else {
-          px = midX + (x2 - midX) * ((curDist - seg1 - seg2) / seg3);
-          py = y2;
+        if (type === 'AND' || type === 'NAND') {
+          // Flat left edge, rounded right edge
+          ctx.moveTo(x - w / 2, y - h / 2);
+          ctx.lineTo(x, y - h / 2);
+          ctx.arc(x, y, h / 2, -Math.PI / 2, Math.PI / 2);
+          ctx.lineTo(x - w / 2, y + h / 2);
+          ctx.closePath();
+        } else if (type === 'OR' || type === 'NOR' || type === 'XOR' || type === 'XNOR') {
+          // Curved inward back, pointed shield front
+          ctx.moveTo(x - w / 2, y - h / 2);
+          ctx.quadraticCurveTo(x - w / 4, y, x - w / 2, y + h / 2);
+          ctx.quadraticCurveTo(x + w / 3, y + h / 2, x + w / 2, y);
+          ctx.quadraticCurveTo(x + w / 3, y - h / 2, x - w / 2, y - h / 2);
+          ctx.closePath();
+        } else if (type === 'NOT') {
+          // Triangle pointing right
+          ctx.moveTo(x - w / 2, y - h / 2);
+          ctx.lineTo(x + w / 3, y);
+          ctx.lineTo(x - w / 2, y + h / 2);
+          ctx.closePath();
         }
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.shadowColor = '#FFFFFF';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(px, py, 3.5, 0, Math.PI * 2);
         ctx.fill();
-      }
+        ctx.stroke();
 
-      ctx.restore();
-    };
+        // Additional input arc for XOR / XNOR Gate
+        if (type === 'XOR' || type === 'XNOR') {
+          ctx.beginPath();
+          ctx.moveTo(x - w / 2 - 8, y - h / 2);
+          ctx.quadraticCurveTo(x - w / 4 - 8, y, x - w / 2 - 8, y + h / 2);
+          ctx.stroke();
+        }
 
-    // Draw all gates and their interconnect wires
-    gates.forEach((gate) => {
-      // Connect each input wire to the gate entrance
-      gate.inputs.forEach((input) => {
-        const entranceX = gate.type === 'XOR' ? gate.x - 36 : gate.x - 28;
-        drawWire(input.wireX, input.wireY, entranceX, input.wireY, input.level);
+        // Inversion bubble for NAND, NOR, NOT, XNOR
+        if (type === 'NAND' || type === 'NOR' || type === 'NOT' || type === 'XNOR') {
+          const bubbleX = type === 'NOT' ? x + w / 3 + 4 : x + w / 2 + 5;
+          ctx.beginPath();
+          ctx.fillStyle = '#1b2735';
+          ctx.arc(bubbleX, y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
 
-        // Input Pin Label
-        ctx.fillStyle = input.level === 1 ? '#FFFFFF' : '#C8D9E6';
-        ctx.font = '600 10px "JetBrains Mono", monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(input.label, input.wireX - 8, input.wireY + 3);
+        // Gate Model / Type Label
+        ctx.fillStyle = '#F5EFEB'; // Beige text
+        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(type, x - 2, y);
+
+        ctx.restore();
+      };
+
+      // Helper: Draw Orthogonal Wires with Logic State & Pulse Animation
+      const drawWire = (x1: number, y1: number, x2: number, y2: number, level: LogicLevel) => {
+        const isHigh = level === 1;
+
+        ctx.save();
+        ctx.strokeStyle = isHigh ? '#C8D9E6' : '#567C8D';
+        ctx.lineWidth = isHigh ? 2.5 : 1.5;
+
+        if (isHigh) {
+          ctx.shadowColor = 'rgba(200, 217, 230, 0.6)';
+          ctx.shadowBlur = 6;
+        }
+
+        // Orthogonal Manhattan step routing
+        const midX = (x1 + x2) / 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(midX, y1);
+        ctx.lineTo(midX, y2);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Solder junction dots
+        ctx.fillStyle = isHigh ? '#FFFFFF' : '#567C8D';
+        ctx.beginPath();
+        ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+        ctx.arc(x2, y2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Animated traveling signal charge pulse when HIGH
+        if (isHigh) {
+          const t = pulsePhaseRef.current;
+          let px = 0;
+          let py = 0;
+
+          const seg1 = Math.abs(midX - x1);
+          const seg2 = Math.abs(y2 - y1);
+          const seg3 = Math.abs(x2 - midX);
+          const total = seg1 + seg2 + seg3 || 1;
+
+          const curDist = t * total;
+          if (curDist <= seg1) {
+            px = x1 + (midX - x1) * (curDist / seg1);
+            py = y1;
+          } else if (curDist <= seg1 + seg2) {
+            px = midX;
+            py = y1 + (y2 - y1) * ((curDist - seg1) / seg2);
+          } else {
+            px = midX + (x2 - midX) * ((curDist - seg1 - seg2) / seg3);
+            py = y2;
+          }
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.shadowColor = '#FFFFFF';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      };
+
+      // Draw all gates and their interconnect wires
+      gates.forEach((gate) => {
+        // Connect each input wire to the gate entrance
+        gate.inputs.forEach((input) => {
+          const entranceX = gate.type === 'XOR' ? gate.x - 36 : gate.x - 28;
+          drawWire(input.wireX, input.wireY, entranceX, input.wireY, input.level);
+
+          // Input Pin Label
+          ctx.fillStyle = input.level === 1 ? '#FFFFFF' : '#C8D9E6';
+          ctx.font = '600 10px "JetBrains Mono", monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(input.label, input.wireX - 8, input.wireY + 3);
+        });
+
+        // Draw Gate Symbol
+        drawGateSymbol(gate);
+
+        // Connect gate output to destination
+        const exitX = (gate.type === 'NAND' || gate.type === 'NOR')
+          ? gate.x + 33
+          : gate.type === 'NOT'
+          ? gate.x + 23
+          : gate.x + 28;
+
+        drawWire(exitX, gate.y, gate.output.wireX, gate.output.wireY, gate.output.level);
+
+        // Output Node Badge
+        ctx.fillStyle = gate.output.level === 1 ? '#FFFFFF' : '#567C8D';
+        ctx.font = 'bold 11px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(gate.output.label, gate.output.wireX + 8, gate.output.wireY + 4);
       });
 
-      // Draw Gate Symbol
-      drawGateSymbol(gate);
+      animId = requestAnimationFrame(render);
+    };
 
-      // Connect gate output to destination
-      const exitX = (gate.type === 'NAND' || gate.type === 'NOR')
-        ? gate.x + 33
-        : gate.type === 'NOT'
-        ? gate.x + 23
-        : gate.x + 28;
-
-      drawWire(exitX, gate.y, gate.output.wireX, gate.output.wireY, gate.output.level);
-
-      // Output Node Badge
-      ctx.fillStyle = gate.output.level === 1 ? '#FFFFFF' : '#567C8D';
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(gate.output.label, gate.output.wireX + 8, gate.output.wireY + 4);
-    });
-
-  }, [circuitState, activeExpId, pulsePhase]);
+    animId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animId);
+  }, [circuitState, activeExpId]);
 
   // Derive title & formula for header badge
   const canvasW = canvasRef.current?.width || 800;

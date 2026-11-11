@@ -43,7 +43,7 @@ export const FloatingControls: React.FC = () => {
   };
 
   return (
-    <div className="absolute right-4 top-20 z-30 flex flex-col items-end gap-2 pointer-events-auto">
+    <div className="absolute right-4 top-48 z-20 flex flex-col items-end gap-2 pointer-events-auto">
       {/* Layers Menu Popover */}
       {showLayerMenu && (
         <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 p-3 rounded-g2 shadow-2xl flex flex-col gap-2 min-w-[180px] animate-in fade-in slide-in-from-right-2 text-[#F5EFEB]">

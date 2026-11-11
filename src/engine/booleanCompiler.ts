@@ -133,16 +133,32 @@ export class BooleanCompiler {
       } else if (ch === '⊙') {
         rawTokens.push('XNOR');
         i++;
-      } else if (/[a-zA-Z]/.test(ch)) {
-        // Variable identifier
-        rawTokens.push(ch.toUpperCase());
-        i++;
-      } else if (ch === '0' || ch === '1') {
-        rawTokens.push(ch);
-        i++;
+      } else if (upperRem.startsWith('CIN') && !/[a-zA-Z0-9]/.test(expr[i + 3] || '')) {
+        rawTokens.push('CIN');
+        i += 3;
+      } else if (upperRem.startsWith('COUT') && !/[a-zA-Z0-9]/.test(expr[i + 4] || '')) {
+        rawTokens.push('COUT');
+        i += 4;
+      } else if (upperRem.startsWith('CLK') && !/[a-zA-Z0-9]/.test(expr[i + 3] || '')) {
+        rawTokens.push('CLK');
+        i += 3;
       } else {
-        // Unknown character ignored
-        i++;
+        // Check letter + digits (e.g. D0, D1, S0, S1, A1)
+        const letterDigitMatch = expr.slice(i).match(/^([a-zA-Z][0-9]+)/);
+        if (letterDigitMatch) {
+          rawTokens.push(letterDigitMatch[1].toUpperCase());
+          i += letterDigitMatch[1].length;
+        } else if (/[a-zA-Z]/.test(ch)) {
+          // Single-letter variable (e.g. A, B, C) allowing AB -> A AND B
+          rawTokens.push(ch.toUpperCase());
+          i++;
+        } else if (ch === '0' || ch === '1') {
+          rawTokens.push(ch);
+          i++;
+        } else {
+          // Unknown character ignored
+          i++;
+        }
       }
     }
 
@@ -152,6 +168,7 @@ export class BooleanCompiler {
     // [')', A] -> [')', AND, A]
     // ["'", A] -> ["'", AND, A]
     // ["'", '('] -> ["'", AND, '(']
+    const isOperatorToken = (t: string) => ['AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR', 'XNOR'].includes(t);
     const tokens: string[] = [];
     for (let k = 0; k < rawTokens.length; k++) {
       const cur = rawTokens[k];
@@ -159,10 +176,10 @@ export class BooleanCompiler {
 
       if (k < rawTokens.length - 1) {
         const nxt = rawTokens[k + 1];
-        const curIsVar = /^[A-Z0-9]$/.test(cur);
+        const curIsVar = (/^[A-Z][A-Z0-9]*$/.test(cur) || cur === '0' || cur === '1') && !isOperatorToken(cur);
         const curIsPostNot = cur === "'";
         const curIsClose = cur === ')';
-        const nxtIsVar = /^[A-Z0-9]$/.test(nxt);
+        const nxtIsVar = (/^[A-Z][A-Z0-9]*$/.test(nxt) || nxt === '0' || nxt === '1') && !isOperatorToken(nxt);
         const nxtIsOpen = nxt === '(';
         const nxtIsPreNot = nxt === 'NOT';
 
@@ -723,7 +740,7 @@ class BooleanParser {
       return { type: 'CONST', value: Number(token) as 0 | 1 };
     }
 
-    if (/^[A-Z0-9]$/.test(token)) {
+    if (/^[A-Z][A-Z0-9]*$/.test(token)) {
       this.consume();
       return { type: 'VAR', name: token };
     }

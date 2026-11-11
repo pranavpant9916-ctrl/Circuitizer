@@ -8,7 +8,7 @@ export const ProbeHUD: React.FC = () => {
   if (!isProbeMode) return null;
 
   return (
-    <div className="absolute top-20 left-4 right-4 z-30 pointer-events-auto flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-2">
+    <div className="absolute top-48 left-4 right-4 z-20 pointer-events-auto flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-2">
       {probedNet ? (
         <div className="w-full max-w-md bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl p-4 shadow-2xl flex flex-col gap-3 text-[#F5EFEB]">
           {/* Header */}
