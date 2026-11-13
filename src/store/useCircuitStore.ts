@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { EXPERIMENTS } from '../engine/experiments';
 import { defaultGrid } from '../engine/grid';
 import { NetlistEngine } from '../engine/netlist';
+import { AudioEngine } from '../engine/audioEngine';
 import {
   CircuitState,
   JumperWire,
@@ -102,6 +103,10 @@ interface CircuitStoreState {
   isAnalyzerOpen: boolean;
   toggleAnalyzer: () => void;
 
+  // Audio State
+  isMuted: boolean;
+  toggleMute: () => void;
+
   // AI Circuit Synthesis
   loadSynthesizedExperiment: (exp: Experiment) => void;
 }
@@ -185,6 +190,12 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
     waveforms: [],
     isAnalyzerOpen: false,
 
+    isMuted: AudioEngine.getMuted(),
+    toggleMute: () => {
+      const next = AudioEngine.toggleMute();
+      set({ isMuted: next });
+    },
+
     toggleAnalyzer: () => {
       set((state) => ({ isAnalyzerOpen: !state.isAnalyzerOpen }));
     },
@@ -223,6 +234,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
 
       const nextIdx = currentStepIndex + 1;
       const newCircuit = buildCircuitForStep(exp, nextIdx);
+      AudioEngine.playStepChange(true);
       // Keep breadboard stationary - do not auto-pan on step changes
       set({ currentStepIndex: nextIdx, circuitState: newCircuit });
       get().runSimTick();
@@ -235,6 +247,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
 
       const prevIdx = currentStepIndex - 1;
       const newCircuit = buildCircuitForStep(exp, prevIdx);
+      AudioEngine.playStepChange(false);
       // Keep breadboard stationary - do not auto-pan on step changes
       set({ currentStepIndex: prevIdx, circuitState: newCircuit });
       get().runSimTick();
@@ -246,6 +259,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       if (!exp) return;
       const validIdx = Math.max(0, Math.min(stepIndex, exp.steps.length - 1));
       const newCircuit = buildCircuitForStep(exp, validIdx);
+      AudioEngine.playWireInsert();
       set({ currentStepIndex: validIdx, circuitState: newCircuit });
       get().runSimTick();
     },
@@ -284,6 +298,10 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
 
     toggleSwitch: (switchId) => {
       const { circuitState } = get();
+      const targetSwitch = circuitState.switches.find((sw: PlacedSwitch) => sw.id === switchId);
+      if (targetSwitch) {
+        AudioEngine.playSwitchClick(!targetSwitch.isClosed);
+      }
       const updatedSwitches = circuitState.switches.map((sw: PlacedSwitch) =>
         sw.id === switchId ? { ...sw, isClosed: !sw.isClosed } : sw
       );
@@ -340,6 +358,10 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
         ...led,
         isLit: result.ledStates[led.id] ?? led.isLit,
       }));
+
+      if (result.isDeadShort) {
+        AudioEngine.playBuzzerAlert();
+      }
 
       set({
         circuitState: {
@@ -401,6 +423,13 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
 
       const level = net ? net.level : 'Z';
       const isShort = net ? net.isShortCircuit : false;
+
+      // Audio feedback for multimeter probe contact
+      if (isShort) {
+        AudioEngine.playBuzzerAlert();
+      } else if (level === 1 || level === 0) {
+        AudioEngine.playLogicPulse(level === 1);
+      }
       const voltageText = isShort
         ? '0.00 V (DEAD SHORT)'
         : level === 1

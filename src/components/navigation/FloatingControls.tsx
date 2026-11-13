@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
-import { Activity, Eye, Gauge, Layers, LocateFixed, Minus, Plus, Zap } from 'lucide-react';
+import { Activity, Eye, Gauge, Layers, LocateFixed, Minus, Plus, Volume2, VolumeX, Zap } from 'lucide-react';
 
 export const FloatingControls: React.FC = () => {
   const {
@@ -12,6 +12,8 @@ export const FloatingControls: React.FC = () => {
     toggleProbeMode,
     isAnalyzerOpen,
     toggleAnalyzer,
+    isMuted,
+    toggleMute,
   } = useCircuitStore();
 
   const [showLayerMenu, setShowLayerMenu] = useState(false);
@@ -140,6 +142,19 @@ export const FloatingControls: React.FC = () => {
           title="Recenter"
         >
           <LocateFixed className="w-4 h-4" />
+        </button>
+
+        {/* Tactile Audio Mute / Unmute */}
+        <button
+          onClick={toggleMute}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+            !isMuted
+              ? 'text-[#C8D9E6]/90 hover:bg-[#2F4156] hover:text-white'
+              : 'bg-[#2F4156]/50 text-red-300 hover:bg-[#2F4156]'
+          }`}
+          title={isMuted ? 'Unmute Tactile Lab Audio' : 'Mute Tactile Lab Audio'}
+        >
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
         <div className="h-px bg-[#567C8D]/30 mx-1 my-0.5" />

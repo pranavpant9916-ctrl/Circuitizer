@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
+import { AudioEngine } from '../../engine/audioEngine';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -67,6 +68,10 @@ export const StepBottomSheet: React.FC = () => {
 
   // Apply row inputs when clicked in truth table across all circuit switches
   const applyRowInputs = (row: (string | number)[]) => {
+    const rowText = String(row[row.length - 1]);
+    const rowIsLit = rowText.includes('1') || rowText.includes('ON') || rowText.includes('Lit');
+    AudioEngine.playRowSelect(rowIsLit);
+
     circuitState.switches.forEach((sw, idx) => {
       if (typeof row[idx] === 'number') {
         const target = row[idx] === 1;

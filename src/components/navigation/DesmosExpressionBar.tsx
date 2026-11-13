@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { BooleanCompiler } from '../../engine/booleanCompiler';
+import { AudioEngine } from '../../engine/audioEngine';
 import {
   ChevronDown,
   ChevronUp,
@@ -111,6 +112,7 @@ export const DesmosExpressionBar: React.FC = () => {
         setIsCompiling(false);
       } catch (err: any) {
         console.error(err);
+        AudioEngine.playBuzzerAlert();
         setCompilerError(err.message || 'Syntax error in Boolean equation.');
         setIsCompiling(false);
       }
