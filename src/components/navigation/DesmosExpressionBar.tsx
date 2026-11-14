@@ -20,6 +20,8 @@ export const DesmosExpressionBar: React.FC = () => {
     toggleSwitch,
     loadSynthesizedExperiment,
     jumpToStep,
+    pendingFormula,
+    setPendingFormula,
   } = useCircuitStore();
 
   const activeExp = experiments.find((e) => e.id === activeExpId);
@@ -60,6 +62,16 @@ export const DesmosExpressionBar: React.FC = () => {
     setCompilerError(null);
     setCompileSuccess(null);
   }, [activeExpId]);
+
+  // Synchronize when a reverse-extracted or scanned formula is dispatched
+  useEffect(() => {
+    if (pendingFormula) {
+      setFormulaInput(pendingFormula);
+      setCompilerError(null);
+      setCompileSuccess(`Synced from reverse netlist: ${pendingFormula}`);
+      setPendingFormula(null);
+    }
+  }, [pendingFormula, setPendingFormula]);
 
   // Extract variables from the current formula
   const detectedVariables = React.useMemo(() => {

@@ -107,6 +107,10 @@ interface CircuitStoreState {
   isMuted: boolean;
   toggleMute: () => void;
 
+  // Formula Synchronization
+  pendingFormula: string | null;
+  setPendingFormula: (formula: string | null) => void;
+
   // AI Circuit Synthesis
   loadSynthesizedExperiment: (exp: Experiment) => void;
 }
@@ -195,6 +199,9 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       const next = AudioEngine.toggleMute();
       set({ isMuted: next });
     },
+
+    pendingFormula: null,
+    setPendingFormula: (formula) => set({ pendingFormula: formula }),
 
     toggleAnalyzer: () => {
       set((state) => ({ isAnalyzerOpen: !state.isAnalyzerOpen }));

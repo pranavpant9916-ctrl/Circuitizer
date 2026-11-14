@@ -6,6 +6,7 @@ import { StepBottomSheet } from './components/navigation/StepBottomSheet';
 import { FloatingControls } from './components/navigation/FloatingControls';
 import { LogicAnalyzerDock } from './components/instruments/LogicAnalyzerDock';
 import { ProbeHUD } from './components/instruments/ProbeHUD';
+import { LiveReverseLogicBadge } from './components/navigation/LiveReverseLogicBadge';
 import { CameraScanner } from './components/camera/CameraScanner';
 import { useCircuitStore } from './store/useCircuitStore';
 
@@ -23,7 +24,10 @@ export const App: React.FC = () => {
       {/* 3. Floating Controls (Layers, Recenter, Zoom, Probe - Breadboard Mode) */}
       {viewMode === 'BREADBOARD' && <FloatingControls />}
 
-      {/* 4. Interactive Multimeter & Logic Probe HUD */}
+      {/* 4. Live Reverse-Engineered Logic Badge & Diagnostics */}
+      {viewMode === 'BREADBOARD' && activeMode === 'GUIDE' && <LiveReverseLogicBadge />}
+
+      {/* 5. Interactive Multimeter & Logic Probe HUD */}
       {viewMode === 'BREADBOARD' && <ProbeHUD />}
 
       {/* 5. Live Waveform Analyzer & Clock Dock */}
