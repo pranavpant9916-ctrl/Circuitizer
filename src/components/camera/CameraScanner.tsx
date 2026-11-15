@@ -113,7 +113,10 @@ export const CameraScanner: React.FC = () => {
         // Perspective rectify using the 4 calibrated corners
         const img = new Image();
         img.src = dataUrl;
-        await new Promise((res) => { img.onload = res; });
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error('Invalid image format or corrupted file.'));
+        });
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = img.width;

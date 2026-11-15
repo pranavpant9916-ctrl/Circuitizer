@@ -130,6 +130,12 @@ export class HomographyEngine {
     // Inverse Homography: map each destination pixel (u, v) -> source pixel (x, y)
     const H_inv = this.getPerspectiveTransform(dstPoints, srcPoints);
 
+    // Safeguard against degenerate collinear corner cases
+    if (!H_inv || H_inv.some((val) => isNaN(val))) {
+      console.warn('Degenerate homography corners, returning source canvas');
+      return sourceCanvas;
+    }
+
     // Create destination canvas
     const destCanvas = document.createElement('canvas');
     destCanvas.width = targetWidth;
