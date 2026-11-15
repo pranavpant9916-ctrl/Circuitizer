@@ -8,16 +8,20 @@ import {
 import { ReverseBooleanExtractor } from '../../engine/reverseExtractor';
 import { BooleanCompiler } from '../../engine/booleanCompiler';
 import { AudioEngine } from '../../engine/audioEngine';
+import { BreadboardCorners, HomographyEngine } from '../../engine/homography';
 import {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
   Camera,
   ChevronLeft,
+  Crosshair,
   FileSpreadsheet,
   FileUp,
+  Maximize2,
   Play,
   RefreshCw,
+  RotateCcw,
   Scan,
   Sparkles,
   Zap,
@@ -34,12 +38,25 @@ export const CameraScanner: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const [activeTab, setActiveTab] = useState<VisionInputType>('SCHEMATIC_DIAGRAM');
+  const [activeTab, setActiveTab] = useState<VisionInputType>('PHYSICAL_BREADBOARD');
   const [streamActive, setStreamActive] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [rectifiedImage, setRectifiedImage] = useState<string | null>(null);
+  const [viewProjection, setViewProjection] = useState<'DESK_PERSPECTIVE' | 'RECTIFIED_ORTHO'>('DESK_PERSPECTIVE');
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // 4-Corner Homography Targets in percentage of viewfinder container [0..100]
+  const [corners, setCorners] = useState<BreadboardCorners>({
+    a1: { x: 12, y: 24 },    // Top-Left (A1)
+    a63: { x: 88, y: 24 },   // Top-Right (A63)
+    j63: { x: 84, y: 76 },   // Bottom-Right (J63 - slight inward desk perspective)
+    j1: { x: 16, y: 76 },    // Bottom-Left (J1 - slight inward desk perspective)
+  });
+
+  const [draggingCorner, setDraggingCorner] = useState<keyof BreadboardCorners | null>(null);
 
   // Vision Extraction Results
   const [visionResult, setVisionResult] = useState<VisionExtractionResult | null>(null);
@@ -82,26 +99,54 @@ export const CameraScanner: React.FC = () => {
     };
   }, []);
 
-  // Process an image (either captured from camera or uploaded as file)
-  const processImage = async (dataUrl: string) => {
+  // Process an image (from capture or file upload) and apply perspective homography
+  const processImage = async (dataUrl: string, applyHomography: boolean = true) => {
     setIsAnalyzing(true);
     setVisionResult(null);
     setReverseResult(null);
     setPlotError(null);
 
     try {
-      if (activeTab === 'PHYSICAL_BREADBOARD') {
-        // Run both computer vision heuristic AND live circuit reverse extraction
+      let finalDataUrl = dataUrl;
+
+      if (activeTab === 'PHYSICAL_BREADBOARD' && applyHomography) {
+        // Perspective rectify using the 4 calibrated corners
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((res) => { img.onload = res; });
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const tCtx = tempCanvas.getContext('2d');
+        if (tCtx) {
+          tCtx.drawImage(img, 0, 0);
+
+          // Convert percentage corner coordinates to source image pixel space
+          const pixelCorners: BreadboardCorners = {
+            a1: { x: (corners.a1.x / 100) * img.width, y: (corners.a1.y / 100) * img.height },
+            a63: { x: (corners.a63.x / 100) * img.width, y: (corners.a63.y / 100) * img.height },
+            j63: { x: (corners.j63.x / 100) * img.width, y: (corners.j63.y / 100) * img.height },
+            j1: { x: (corners.j1.x / 100) * img.width, y: (corners.j1.y / 100) * img.height },
+          };
+
+          const rectifiedCanvas = HomographyEngine.rectifyBreadboard(tempCanvas, pixelCorners, 1260, 400);
+          const rectUrl = rectifiedCanvas.toDataURL('image/jpeg');
+          setRectifiedImage(rectUrl);
+          finalDataUrl = rectUrl;
+        }
+
         const [vResult] = await Promise.all([
-          VisionCircuitExtractor.analyzeImage(dataUrl, activeTab),
+          VisionCircuitExtractor.analyzeImage(finalDataUrl, activeTab),
         ]);
         const revResult = ReverseBooleanExtractor.extract(circuitState);
         setVisionResult(vResult);
         setReverseResult(revResult);
       } else {
-        const vResult = await VisionCircuitExtractor.analyzeImage(dataUrl, activeTab);
+        const vResult = await VisionCircuitExtractor.analyzeImage(finalDataUrl, activeTab);
         setVisionResult(vResult);
       }
+
       AudioEngine.playRowSelect(true);
     } catch (err: any) {
       console.error('Vision processing error:', err);
@@ -128,11 +173,11 @@ export const CameraScanner: React.FC = () => {
       }
     } else {
       // Fallback synthetic placeholder data
-      dataUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="%231b2735"/><text x="50%25" y="50%25" fill="%23C8D9E6" text-anchor="middle">Synthetic Capture</text></svg>';
+      dataUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="%231b2735"/><text x="50%25" y="50%25" fill="%23C8D9E6" text-anchor="middle">Synthetic Camera Feed</text></svg>';
     }
 
     setCapturedImage(dataUrl);
-    processImage(dataUrl);
+    processImage(dataUrl, true);
   };
 
   // Handle local file upload
@@ -145,7 +190,7 @@ export const CameraScanner: React.FC = () => {
       const dataUrl = event.target?.result as string;
       if (dataUrl) {
         setCapturedImage(dataUrl);
-        processImage(dataUrl);
+        processImage(dataUrl, true);
       }
     };
     reader.readAsDataURL(file);
@@ -153,9 +198,56 @@ export const CameraScanner: React.FC = () => {
 
   const handleRetake = () => {
     setCapturedImage(null);
+    setRectifiedImage(null);
     setVisionResult(null);
     setReverseResult(null);
     setPlotError(null);
+    setViewProjection('DESK_PERSPECTIVE');
+  };
+
+  const handleResetCorners = () => {
+    AudioEngine.playStepChange(false);
+    setCorners({
+      a1: { x: 12, y: 24 },
+      a63: { x: 88, y: 24 },
+      j63: { x: 84, y: 76 },
+      j1: { x: 16, y: 76 },
+    });
+  };
+
+  // Dragging logic for the 4 corner targets
+  const handlePointerDown = (corner: keyof BreadboardCorners, e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setDraggingCorner(corner);
+    AudioEngine.playSwitchClick(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!draggingCorner || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+    const rawY = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const clampedX = Math.max(3, Math.min(97, rawX));
+    const clampedY = Math.max(3, Math.min(97, rawY));
+
+    setCorners((prev) => ({
+      ...prev,
+      [draggingCorner]: { x: clampedX, y: clampedY },
+    }));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (draggingCorner) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      setDraggingCorner(null);
+      AudioEngine.playSwitchClick(false);
+    }
   };
 
   // Plot the recognized / minimized Boolean formula onto the digital twin breadboard
@@ -176,6 +268,26 @@ export const CameraScanner: React.FC = () => {
     }
   };
 
+  // Compute SVG polygon points for reticle
+  const polygonPoints = `${corners.a1.x},${corners.a1.y} ${corners.a63.x},${corners.a63.y} ${corners.j63.x},${corners.j63.y} ${corners.j1.x},${corners.j1.y}`;
+
+  // Center trench line
+  const trenchLeftX = (corners.a1.x + corners.j1.x) / 2;
+  const trenchLeftY = (corners.a1.y + corners.j1.y) / 2;
+  const trenchRightX = (corners.a63.x + corners.j63.x) / 2;
+  const trenchRightY = (corners.a63.y + corners.j63.y) / 2;
+
+  // Power rails lines (Top Red VCC rail & Bottom Blue GND rail)
+  const topRailLeftX = corners.a1.x * 0.75 + corners.j1.x * 0.25;
+  const topRailLeftY = corners.a1.y * 0.75 + corners.j1.y * 0.25;
+  const topRailRightX = corners.a63.x * 0.75 + corners.j63.x * 0.25;
+  const topRailRightY = corners.a63.y * 0.75 + corners.j63.y * 0.25;
+
+  const botRailLeftX = corners.a1.x * 0.25 + corners.j1.x * 0.75;
+  const botRailLeftY = corners.a1.y * 0.25 + corners.j1.y * 0.75;
+  const botRailRightX = corners.a63.x * 0.25 + corners.j63.x * 0.75;
+  const botRailRightY = corners.a63.y * 0.25 + corners.j63.y * 0.75;
+
   return (
     <div className="fixed inset-0 z-40 bg-[#131d27] flex flex-col justify-between text-[#F5EFEB]">
       {/* Top Header Bar */}
@@ -193,7 +305,7 @@ export const CameraScanner: React.FC = () => {
           <button
             onClick={() => {
               setActiveTab('SCHEMATIC_DIAGRAM');
-              if (capturedImage) processImage(capturedImage);
+              if (capturedImage) processImage(capturedImage, false);
             }}
             className={`px-3 py-1 rounded-full transition flex items-center gap-1.5 ${
               activeTab === 'SCHEMATIC_DIAGRAM'
@@ -208,7 +320,7 @@ export const CameraScanner: React.FC = () => {
           <button
             onClick={() => {
               setActiveTab('TRUTH_TABLE');
-              if (capturedImage) processImage(capturedImage);
+              if (capturedImage) processImage(capturedImage, false);
             }}
             className={`px-3 py-1 rounded-full transition flex items-center gap-1.5 ${
               activeTab === 'TRUTH_TABLE'
@@ -223,7 +335,7 @@ export const CameraScanner: React.FC = () => {
           <button
             onClick={() => {
               setActiveTab('PHYSICAL_BREADBOARD');
-              if (capturedImage) processImage(capturedImage);
+              if (capturedImage) processImage(capturedImage, true);
             }}
             className={`px-3 py-1 rounded-full transition flex items-center gap-1.5 ${
               activeTab === 'PHYSICAL_BREADBOARD'
@@ -232,7 +344,7 @@ export const CameraScanner: React.FC = () => {
             }`}
           >
             <Scan className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Breadboard</span>
+            <span className="hidden sm:inline">Breadboard Homography</span>
           </button>
         </div>
 
@@ -245,27 +357,77 @@ export const CameraScanner: React.FC = () => {
           className="hidden"
         />
 
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] hover:text-white text-xs font-semibold shadow-sm transition"
-          title="Upload photo from disk or camera roll"
-        >
-          <FileUp className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Upload Image</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {activeTab === 'PHYSICAL_BREADBOARD' && !capturedImage && (
+            <button
+              onClick={handleResetCorners}
+              className="px-2.5 py-1.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] hover:text-white text-xs font-semibold flex items-center gap-1 transition"
+              title="Reset corners to calibrated default alignment"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Reset Reticle</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] hover:text-white text-xs font-semibold shadow-sm transition"
+            title="Upload photo from disk or camera roll"
+          >
+            <FileUp className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Upload Photo</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Viewport & Viewfinder */}
-      <div className="relative flex-1 bg-[#131d27] flex items-center justify-center overflow-hidden">
+      <div
+        ref={containerRef}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="relative flex-1 bg-[#131d27] flex items-center justify-center overflow-hidden touch-none"
+      >
         {/* Hidden Snapshot Canvas */}
         <canvas ref={canvasRef} className="hidden" />
 
+        {/* Captured Image Display with View Projection Toggle */}
         {capturedImage ? (
-          <img
-            src={capturedImage}
-            alt="Captured Circuit Input"
-            className="w-full h-full object-contain p-2"
-          />
+          <div className="relative w-full h-full flex items-center justify-center">
+            <img
+              src={viewProjection === 'RECTIFIED_ORTHO' && rectifiedImage ? rectifiedImage : capturedImage}
+              alt="Captured Circuit Input"
+              className="w-full h-full object-contain p-2"
+            />
+
+            {/* Projection Mode Switcher (Desk Angle vs Rectified Orthographic) */}
+            {rectifiedImage && activeTab === 'PHYSICAL_BREADBOARD' && (
+              <div className="absolute top-4 bg-[#1b2735]/90 backdrop-blur-md border border-[#567C8D]/40 p-1 rounded-full flex items-center gap-1 shadow-2xl text-xs z-20">
+                <button
+                  onClick={() => setViewProjection('DESK_PERSPECTIVE')}
+                  className={`px-3 py-1 rounded-full transition flex items-center gap-1.5 ${
+                    viewProjection === 'DESK_PERSPECTIVE'
+                      ? 'bg-[#C8D9E6] text-[#131d27] font-bold'
+                      : 'text-[#C8D9E6]/80 hover:text-white'
+                  }`}
+                >
+                  <Camera className="w-3 h-3" />
+                  <span>Desk Perspective</span>
+                </button>
+
+                <button
+                  onClick={() => setViewProjection('RECTIFIED_ORTHO')}
+                  className={`px-3 py-1 rounded-full transition flex items-center gap-1.5 ${
+                    viewProjection === 'RECTIFIED_ORTHO'
+                      ? 'bg-[#C8D9E6] text-[#131d27] font-bold shadow'
+                      : 'text-[#C8D9E6]/80 hover:text-white'
+                  }`}
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  <span>Orthographic (Homography)</span>
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <video
             ref={videoRef}
@@ -275,27 +437,102 @@ export const CameraScanner: React.FC = () => {
           />
         )}
 
-        {/* Viewfinder Reticle Overlay */}
-        {!capturedImage && (
+        {/* Interactive 4-Corner Homography Reticle (Only in Physical Breadboard Mode) */}
+        {!capturedImage && activeTab === 'PHYSICAL_BREADBOARD' && (
+          <div className="absolute inset-0 pointer-events-none select-none">
+            {/* SVG Connecting Polygon, Grid Lines & Trench */}
+            <svg className="w-full h-full absolute inset-0">
+              {/* Outer Quad Polygon */}
+              <polygon
+                points={polygonPoints}
+                className="fill-[#567C8D]/15 stroke-[#C8D9E6] stroke-[2] [stroke-dasharray:6,4]"
+              />
+
+              {/* Center Trench (Dividing Section e and f) */}
+              <line
+                x1={`${trenchLeftX}%`}
+                y1={`${trenchLeftY}%`}
+                x2={`${trenchRightX}%`}
+                y2={`${trenchRightY}%`}
+                className="stroke-amber-300/70 stroke-[1.5] [stroke-dasharray:4,3]"
+              />
+
+              {/* Top Rail Guide (+5V Red) */}
+              <line
+                x1={`${topRailLeftX}%`}
+                y1={`${topRailLeftY}%`}
+                x2={`${topRailRightX}%`}
+                y2={`${topRailRightY}%`}
+                className="stroke-rose-400/50 stroke-[1] [stroke-dasharray:3,3]"
+              />
+
+              {/* Bottom Rail Guide (0V Blue) */}
+              <line
+                x1={`${botRailLeftX}%`}
+                y1={`${botRailLeftY}%`}
+                x2={`${botRailRightX}%`}
+                y2={`${botRailRightY}%`}
+                className="stroke-sky-400/50 stroke-[1] [stroke-dasharray:3,3]"
+              />
+            </svg>
+
+            {/* Instruction Banner Pill */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#1b2735]/95 backdrop-blur-md text-[#C8D9E6] text-xs font-serif px-4 py-1.5 rounded-full border border-[#567C8D]/50 shadow-2xl flex items-center gap-2">
+              <Crosshair className="w-3.5 h-3.5 text-[#C8D9E6] animate-spin-slow" />
+              <span>Drag corners to align A1, A63, J1, and J63 to breadboard</span>
+            </div>
+
+            {/* 4 Draggable Interactive Target Handles */}
+            {[
+              { key: 'a1', label: 'A1 (Row 1 Top)', pt: corners.a1, alignClass: '-translate-x-1/2 -translate-y-1/2' },
+              { key: 'a63', label: 'A63 (Row 63 Top)', pt: corners.a63, alignClass: '-translate-x-1/2 -translate-y-1/2' },
+              { key: 'j63', label: 'J63 (Row 63 Bot)', pt: corners.j63, alignClass: '-translate-x-1/2 -translate-y-1/2' },
+              { key: 'j1', label: 'J1 (Row 1 Bot)', pt: corners.j1, alignClass: '-translate-x-1/2 -translate-y-1/2' },
+            ].map(({ key, label, pt, alignClass }) => (
+              <div
+                key={key}
+                style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
+                onPointerDown={(e) => handlePointerDown(key as keyof BreadboardCorners, e)}
+                className={`absolute ${alignClass} pointer-events-auto cursor-grab active:cursor-grabbing flex flex-col items-center group z-30 touch-none`}
+              >
+                {/* Target Ring */}
+                <div className="relative flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-[#1b2735]/80 shadow-[0_0_12px_rgba(200,217,230,0.9)] flex items-center justify-center transition group-hover:scale-125">
+                    <div className="w-2 h-2 rounded-full bg-[#C8D9E6]" />
+                  </div>
+                  {/* Subtle Crosshair Lines */}
+                  <div className="absolute w-12 h-px bg-white/40 pointer-events-none" />
+                  <div className="absolute h-12 w-px bg-white/40 pointer-events-none" />
+                </div>
+
+                {/* Floating Coordinate Label Badge */}
+                <span className="mt-1 px-2 py-0.5 rounded bg-[#131d27]/90 text-[10px] font-mono font-bold text-[#C8D9E6] border border-[#567C8D]/50 shadow-md whitespace-nowrap pointer-events-none">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Viewfinder Reticle for Schematic / Truth Table */}
+        {!capturedImage && activeTab !== 'PHYSICAL_BREADBOARD' && (
           <div className="absolute inset-8 border border-[#567C8D]/50 rounded-g2-xl pointer-events-none flex flex-col items-center justify-between p-4">
             <div className="bg-[#1b2735]/90 backdrop-blur-md text-[#C8D9E6] text-xs font-serif px-3 py-1 rounded-full border border-[#567C8D]/40 shadow-lg">
               {activeTab === 'SCHEMATIC_DIAGRAM'
                 ? 'Align schematic gate diagram in frame'
-                : activeTab === 'TRUTH_TABLE'
-                ? 'Align truth table sheet or worksheet'
-                : 'Align physical 830-tie breadboard'}
+                : 'Align truth table sheet or worksheet'}
             </div>
 
             <div className="flex justify-between w-full text-[10px] text-[#C8D9E6]/70 font-mono">
-              <span>{activeTab === 'PHYSICAL_BREADBOARD' ? 'Pin 1 / Row 1' : 'Inputs (A, B)'}</span>
-              <span>{activeTab === 'PHYSICAL_BREADBOARD' ? 'Row 63' : 'Output (Y)'}</span>
+              <span>Inputs (A, B)</span>
+              <span>Output (Y)</span>
             </div>
           </div>
         )}
 
         {/* Error / Fallback Banner */}
         {cameraError && !capturedImage && (
-          <div className="absolute inset-x-4 top-20 bg-[#1b2735]/95 border border-[#567C8D]/40 p-4 rounded-g2-xl text-center flex flex-col items-center gap-2.5 shadow-2xl">
+          <div className="absolute inset-x-4 top-20 bg-[#1b2735]/95 border border-[#567C8D]/40 p-4 rounded-g2-xl text-center flex flex-col items-center gap-2.5 shadow-2xl z-30">
             <AlertTriangle className="w-5 h-5 text-amber-300" />
             <div className="text-xs text-[#C8D9E6] font-serif leading-relaxed max-w-sm">
               {cameraError}
@@ -320,11 +557,11 @@ export const CameraScanner: React.FC = () => {
 
         {/* Loading Spinner */}
         {isAnalyzing && (
-          <div className="absolute inset-0 bg-[#131d27]/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+          <div className="absolute inset-0 bg-[#131d27]/85 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-30">
             <RefreshCw className="w-8 h-8 text-[#C8D9E6] animate-spin" />
             <div className="text-xs font-semibold text-white flex items-center gap-2 font-serif">
               <Sparkles className="w-4 h-4 text-[#C8D9E6]" />
-              <span>Analyzing Multi-Modal Vision Model...</span>
+              <span>Perspective-Rectifying & Ingesting Circuit...</span>
             </div>
           </div>
         )}
@@ -464,7 +701,7 @@ export const CameraScanner: React.FC = () => {
                 ? 'Capture logic gates from textbook or worksheet to compile directly.'
                 : activeTab === 'TRUTH_TABLE'
                 ? 'Capture truth table matrix to minimize logic into Boolean equation.'
-                : 'Inspect physical breadboard components against digital twin.'}
+                : 'Drag reticle targets A1, A63, J1, and J63 over your breadboard to rectify desk perspective.'}
             </div>
 
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
@@ -473,7 +710,7 @@ export const CameraScanner: React.FC = () => {
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] hover:text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition"
               >
                 <FileUp className="w-4 h-4" />
-                <span>Choose Image</span>
+                <span>Choose Photo</span>
               </button>
 
               <button
