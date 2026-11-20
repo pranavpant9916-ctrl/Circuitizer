@@ -55,7 +55,6 @@ interface CircuitStoreState {
     internalTracks: boolean;
     signalTraffic: boolean;
   };
-  activeMode: 'GUIDE' | 'SCAN_CAMERA';
   viewMode: 'BREADBOARD' | 'BOOLEAN_DIAGRAM';
 
   // Interactive Probe Mode
@@ -81,7 +80,6 @@ interface CircuitStoreState {
   setViewport: (vp: Partial<ViewportTransform>) => void;
   recenterOnHole: (holeId: string) => void;
   toggleLayer: (layer: 'realistic' | 'internalTracks' | 'signalTraffic') => void;
-  setMode: (mode: 'GUIDE' | 'SCAN_CAMERA') => void;
   setActiveHole: (holeId: string | null) => void;
 
   // Circuit actions
@@ -173,7 +171,6 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       signalTraffic: true,
     },
 
-    activeMode: 'GUIDE',
     viewMode: 'BREADBOARD',
 
     setViewMode: (mode) => set({ viewMode: mode }),
@@ -298,8 +295,6 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
         },
       }));
     },
-
-    setMode: (mode) => set({ activeMode: mode }),
 
     setActiveHole: (holeId) => set({ activeHoleId: holeId }),
 

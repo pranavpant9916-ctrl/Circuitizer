@@ -7,11 +7,10 @@ import { FloatingControls } from './components/navigation/FloatingControls';
 import { LogicAnalyzerDock } from './components/instruments/LogicAnalyzerDock';
 import { ProbeHUD } from './components/instruments/ProbeHUD';
 import { LiveReverseLogicBadge } from './components/navigation/LiveReverseLogicBadge';
-import { CameraScanner } from './components/camera/CameraScanner';
 import { useCircuitStore } from './store/useCircuitStore';
 
 export const App: React.FC = () => {
-  const { activeMode, viewMode } = useCircuitStore();
+  const { viewMode } = useCircuitStore();
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#131d27] font-serif antialiased select-none">
@@ -25,7 +24,7 @@ export const App: React.FC = () => {
       {viewMode === 'BREADBOARD' && <FloatingControls />}
 
       {/* 4. Live Reverse-Engineered Logic Badge & Diagnostics */}
-      {viewMode === 'BREADBOARD' && activeMode === 'GUIDE' && <LiveReverseLogicBadge />}
+      {viewMode === 'BREADBOARD' && <LiveReverseLogicBadge />}
 
       {/* 5. Interactive Multimeter & Logic Probe HUD */}
       {viewMode === 'BREADBOARD' && <ProbeHUD />}
@@ -35,9 +34,6 @@ export const App: React.FC = () => {
 
       {/* 6. Turn-by-Turn Guidance Bottom Sheet */}
       <StepBottomSheet />
-
-      {/* 7. YOLO Camera Inspector (When in Scan mode) */}
-      {activeMode === 'SCAN_CAMERA' && <CameraScanner />}
     </main>
   );
 };

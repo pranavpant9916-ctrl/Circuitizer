@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { AICircuitCopilot } from './AICircuitCopilot';
 import { DesmosExpressionBar } from './DesmosExpressionBar';
-import { AlertCircle, Camera, ChevronDown, Compass, Cpu, Grid, Sparkles, X, Zap } from 'lucide-react';
+import { AlertCircle, ChevronDown, Compass, Grid, Sparkles, X, Zap } from 'lucide-react';
 
 export const RouteBar: React.FC = () => {
   const {
     experiments,
     activeExpId,
     selectExperiment,
-    activeMode,
-    setMode,
     viewMode,
     setViewMode,
     isDeadShort,
@@ -84,37 +82,10 @@ export const RouteBar: React.FC = () => {
               <span className="sm:hidden">Diagram</span>
             </button>
           </div>
-
-          {/* Mode Switcher: Guide vs Scan */}
-          <div className="flex items-center bg-[#131d27]/80 p-1 rounded-full border border-[#567C8D]/30 shrink-0">
-            <button
-              onClick={() => setMode('GUIDE')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
-                activeMode === 'GUIDE'
-                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
-                  : 'text-[#C8D9E6]/70 hover:text-white'
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Guide</span>
-            </button>
-
-            <button
-              onClick={() => setMode('SCAN_CAMERA')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
-                activeMode === 'SCAN_CAMERA'
-                  ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
-                  : 'text-[#C8D9E6]/70 hover:text-white'
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Scan</span>
-            </button>
-          </div>
         </div>
 
         {/* Desmos-Style Live Logic Expression Bar */}
-        {activeMode === 'GUIDE' && <DesmosExpressionBar />}
+        <DesmosExpressionBar />
 
         {/* Short Circuit Warning Alert */}
         {isDeadShort && (
