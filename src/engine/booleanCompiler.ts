@@ -271,6 +271,32 @@ export class BooleanCompiler {
   }
 
   /**
+   * Derive a clean, human-readable algebraic label for an AST subtree
+   */
+  public static getNodeLabel(node: ASTNode): string {
+    if (node.type === 'VAR') return node.name;
+    if (node.type === 'CONST') return String(node.value);
+    if (node.type === 'NOT') {
+      if (node.child.type === 'VAR') return `${node.child.name}'`;
+      return `(${this.getNodeLabel(node.child)})'`;
+    }
+    if (node.type === 'BINARY') {
+      const l = this.getNodeLabel(node.left);
+      const r = this.getNodeLabel(node.right);
+      const opSym =
+        node.op === 'AND' ? '•' :
+        node.op === 'OR' ? '+' :
+        node.op === 'XOR' ? '⊕' :
+        node.op === 'XNOR' ? '⊙' : node.op;
+
+      if (node.op === 'NAND') return `(${l} • ${r})'`;
+      if (node.op === 'NOR') return `(${l} + ${r})'`;
+      return `${l} ${opSym} ${r}`;
+    }
+    return '';
+  }
+
+  /**
    * Decompose the AST into a sequence of 2-input gate operations
    */
   public static linearizeGates(ast: ASTNode): CompiledGateOp[] {
@@ -287,12 +313,13 @@ export class BooleanCompiler {
       if (node.type === 'NOT') {
         const childId = traverse(node.child);
         const opId = `gate_not_${counter++}`;
+        const label = this.getNodeLabel(node);
         ops.push({
           id: opId,
           op: 'NOT',
           inputs: [childId],
           outputId: opId,
-          outputLabel: `${childId}'`,
+          outputLabel: label,
         });
         return opId;
       }
@@ -300,12 +327,13 @@ export class BooleanCompiler {
         const lId = traverse(node.left);
         const rId = traverse(node.right);
         const opId = `gate_${node.op.toLowerCase()}_${counter++}`;
+        const label = this.getNodeLabel(node);
         ops.push({
           id: opId,
           op: node.op,
           inputs: [lId, rId],
           outputId: opId,
-          outputLabel: `(${lId} ${node.op} ${rId})`,
+          outputLabel: label,
         });
         return opId;
       }

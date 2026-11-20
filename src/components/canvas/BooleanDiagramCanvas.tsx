@@ -1,17 +1,42 @@
 import React, { useEffect, useRef } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { LogicLevel } from '../../types/circuit';
-import { BooleanCompiler } from '../../engine/booleanCompiler';
+import { BooleanCompiler, CompiledGateOp } from '../../engine/booleanCompiler';
 import { Info, Sparkles, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
+
+interface GatePort {
+  sourceId: string;
+  label: string;
+  portX: number;
+  portY: number;
+  level: LogicLevel;
+}
 
 interface GateNode {
   id: string;
   type: 'AND' | 'OR' | 'NOT' | 'NAND' | 'NOR' | 'XOR' | 'XNOR' | '555' | 'JK_FF';
   x: number;
   y: number;
-  inputs: { label: string; wireX: number; wireY: number; level: LogicLevel }[];
-  output: { label: string; wireX: number; wireY: number; level: LogicLevel };
-  formula?: string;
+  layer: number;
+  entranceX: number;
+  exitX: number;
+  inputs: GatePort[];
+  output: {
+    label: string;
+    portX: number;
+    portY: number;
+    level: LogicLevel;
+  };
+}
+
+interface SchematicWire {
+  id: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  level: LogicLevel;
+  label?: string;
 }
 
 export const BooleanDiagramCanvas: React.FC = () => {
@@ -41,388 +66,335 @@ export const BooleanDiagramCanvas: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Determine current input levels from circuit switches
-  const swA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed ? 1 : 0;
-  const swB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed ? 1 : 0;
-  const swC = circuitState.switches.find((s) => s.id === 'sw-c')?.isClosed ? 1 : 0;
   const isAnyLedLit = circuitState.leds.some((l) => l.isLit);
 
-  // Derive schematic topology based on active experiment or circuit model
-  const deriveGates = (width: number, height: number): { gates: GateNode[]; formula: string; title: string } => {
+  // Derive schematic topology based on active experiment or arbitrary formula
+  const deriveSchematic = (
+    width: number,
+    height: number
+  ): { gates: GateNode[]; wires: SchematicWire[]; formula: string; title: string } => {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    const expId = activeExp?.id || '';
-    const expText = `${activeExp?.title} ${activeExp?.aim}`.toLowerCase();
+    const expText = `${activeExp?.title || ''} ${activeExp?.aim || ''}`.toLowerCase();
 
-    // 1. Majority Voter (AB + BC + AC)
-    if (expText.includes('majority') || expText.includes('voter')) {
-      const outAB: LogicLevel = (swA === 1 && swB === 1) ? 1 : 0;
-      const outBC: LogicLevel = (swB === 1 && swC === 1) ? 1 : 0;
-      const outAC: LogicLevel = (swA === 1 && swC === 1) ? 1 : 0;
-      const finalY: LogicLevel = (outAB === 1 || outBC === 1 || outAC === 1) ? 1 : 0;
-
+    // 1. Specialized Sequential Block: NE555 Timer in Astable Mode
+    if (expText.includes('555') || expText.includes('astable')) {
+      const clkVal = isAnyLedLit ? 1 : 0;
       return {
-        formula: 'Y = (A • B) + (B • C) + (A • C)',
-        title: '3-Input Majority Voter Boolean Diagram',
+        formula: 'f ≈ 1.44 / ((RA + 2RB) • C)',
+        title: 'NE555 Astable Multivibrator Waveform Generator',
         gates: [
           {
-            id: 'g-and1',
-            type: 'AND',
-            x: centerX - 140,
-            y: centerY - 90,
-            inputs: [
-              { label: 'A', wireX: centerX - 240, wireY: centerY - 105, level: swA },
-              { label: 'B', wireX: centerX - 240, wireY: centerY - 75, level: swB },
-            ],
-            output: { label: 'AB', wireX: centerX - 50, wireY: centerY - 90, level: outAB },
-          },
-          {
-            id: 'g-and2',
-            type: 'AND',
-            x: centerX - 140,
-            y: centerY,
-            inputs: [
-              { label: 'B', wireX: centerX - 240, wireY: centerY - 15, level: swB },
-              { label: 'C', wireX: centerX - 240, wireY: centerY + 15, level: swC },
-            ],
-            output: { label: 'BC', wireX: centerX - 50, wireY: centerY, level: outBC },
-          },
-          {
-            id: 'g-and3',
-            type: 'AND',
-            x: centerX - 140,
-            y: centerY + 90,
-            inputs: [
-              { label: 'A', wireX: centerX - 240, wireY: centerY + 75, level: swA },
-              { label: 'C', wireX: centerX - 240, wireY: centerY + 105, level: swC },
-            ],
-            output: { label: 'AC', wireX: centerX - 50, wireY: centerY + 90, level: outAC },
-          },
-          {
-            id: 'g-or1',
-            type: 'OR',
-            x: centerX + 90,
-            y: centerY,
-            inputs: [
-              { label: 'AB', wireX: centerX - 50, wireY: centerY - 90, level: outAB },
-              { label: 'BC', wireX: centerX - 50, wireY: centerY, level: outBC },
-              { label: 'AC', wireX: centerX - 50, wireY: centerY + 90, level: outAC },
-            ],
-            output: { label: 'Y', wireX: centerX + 210, wireY: centerY, level: finalY },
-          },
-        ],
-      };
-    }
-
-    // 2. 2:1 Multiplexer Y = S'D0 + SD1
-    if (expText.includes('multiplexer') || expText.includes('mux')) {
-      const s = swA; // Select
-      const d0 = swB;
-      const d1 = swC;
-      const sNot: LogicLevel = s === 1 ? 0 : 1;
-      const and0: LogicLevel = (sNot === 1 && d0 === 1) ? 1 : 0;
-      const and1: LogicLevel = (s === 1 && d1 === 1) ? 1 : 0;
-      const finalY: LogicLevel = (and0 === 1 || and1 === 1) ? 1 : 0;
-
-      return {
-        formula: 'Y = (S\' • D0) + (S • D1)',
-        title: '2:1 Multiplexer Logic Schematic',
-        gates: [
-          {
-            id: 'g-not',
-            type: 'NOT',
-            x: centerX - 150,
-            y: centerY - 70,
-            inputs: [{ label: 'S', wireX: centerX - 240, wireY: centerY - 70, level: s }],
-            output: { label: "S'", wireX: centerX - 90, wireY: centerY - 70, level: sNot },
-          },
-          {
-            id: 'g-and0',
-            type: 'AND',
-            x: centerX - 40,
-            y: centerY - 50,
-            inputs: [
-              { label: "S'", wireX: centerX - 90, wireY: centerY - 70, level: sNot },
-              { label: 'D0', wireX: centerX - 240, wireY: centerY - 35, level: d0 },
-            ],
-            output: { label: "S'D0", wireX: centerX + 50, wireY: centerY - 50, level: and0 },
-          },
-          {
-            id: 'g-and1',
-            type: 'AND',
-            x: centerX - 40,
-            y: centerY + 50,
-            inputs: [
-              { label: 'S', wireX: centerX - 240, wireY: centerY + 35, level: s },
-              { label: 'D1', wireX: centerX - 240, wireY: centerY + 65, level: d1 },
-            ],
-            output: { label: 'SD1', wireX: centerX + 50, wireY: centerY + 50, level: and1 },
-          },
-          {
-            id: 'g-or',
-            type: 'OR',
-            x: centerX + 120,
-            y: centerY,
-            inputs: [
-              { label: "S'D0", wireX: centerX + 50, wireY: centerY - 50, level: and0 },
-              { label: 'SD1', wireX: centerX + 50, wireY: centerY + 50, level: and1 },
-            ],
-            output: { label: 'Y', wireX: centerX + 210, wireY: centerY, level: finalY },
-          },
-        ],
-      };
-    }
-
-    // 3. 1-Bit Equality Comparator (XNOR)
-    if (expText.includes('comparator') || expText.includes('equality')) {
-      const xorOut: LogicLevel = swA !== swB ? 1 : 0;
-      const xnorOut: LogicLevel = xorOut === 1 ? 0 : 1;
-
-      return {
-        formula: 'Y = (A ⊕ B)\' = A • B + A\' • B\'',
-        title: '1-Bit Equality Comparator (XNOR) Schematic',
-        gates: [
-          {
-            id: 'g-xor',
-            type: 'XOR',
-            x: centerX - 70,
-            y: centerY,
-            inputs: [
-              { label: 'A', wireX: centerX - 200, wireY: centerY - 15, level: swA },
-              { label: 'B', wireX: centerX - 200, wireY: centerY + 15, level: swB },
-            ],
-            output: { label: 'A ⊕ B', wireX: centerX + 10, wireY: centerY, level: xorOut },
-          },
-          {
-            id: 'g-not',
-            type: 'NOT',
-            x: centerX + 80,
-            y: centerY,
-            inputs: [{ label: 'A ⊕ B', wireX: centerX + 10, wireY: centerY, level: xorOut }],
-            output: { label: 'A == B', wireX: centerX + 190, wireY: centerY, level: xnorOut },
-          },
-        ],
-      };
-    }
-
-    // 4. XOR from 4 NAND Gates
-    if (expText.includes('xor') && expText.includes('nand')) {
-      const g1: LogicLevel = (swA === 1 && swB === 1) ? 0 : 1;
-      const g2: LogicLevel = (swA === 1 && g1 === 1) ? 0 : 1;
-      const g3: LogicLevel = (swB === 1 && g1 === 1) ? 0 : 1;
-      const g4: LogicLevel = (g2 === 1 && g3 === 1) ? 0 : 1;
-
-      return {
-        formula: 'Y = ((A • (AB)\')\' • (B • (AB)\')\')\' = A ⊕ B',
-        title: 'Universal NAND Realization of XOR Gate',
-        gates: [
-          {
-            id: 'g-nand1',
-            type: 'NAND',
-            x: centerX - 130,
-            y: centerY,
-            inputs: [
-              { label: 'A', wireX: centerX - 230, wireY: centerY - 15, level: swA },
-              { label: 'B', wireX: centerX - 230, wireY: centerY + 15, level: swB },
-            ],
-            output: { label: '(AB)\'', wireX: centerX - 50, wireY: centerY, level: g1 },
-          },
-          {
-            id: 'g-nand2',
-            type: 'NAND',
-            x: centerX,
-            y: centerY - 65,
-            inputs: [
-              { label: 'A', wireX: centerX - 230, wireY: centerY - 65, level: swA },
-              { label: '(AB)\'', wireX: centerX - 50, wireY: centerY, level: g1 },
-            ],
-            output: { label: 'G2', wireX: centerX + 70, wireY: centerY - 65, level: g2 },
-          },
-          {
-            id: 'g-nand3',
-            type: 'NAND',
-            x: centerX,
-            y: centerY + 65,
-            inputs: [
-              { label: '(AB)\'', wireX: centerX - 50, wireY: centerY, level: g1 },
-              { label: 'B', wireX: centerX - 230, wireY: centerY + 65, level: swB },
-            ],
-            output: { label: 'G3', wireX: centerX + 70, wireY: centerY + 65, level: g3 },
-          },
-          {
-            id: 'g-nand4',
-            type: 'NAND',
-            x: centerX + 130,
-            y: centerY,
-            inputs: [
-              { label: 'G2', wireX: centerX + 70, wireY: centerY - 65, level: g2 },
-              { label: 'G3', wireX: centerX + 70, wireY: centerY + 65, level: g3 },
-            ],
-            output: { label: 'A ⊕ B', wireX: centerX + 210, wireY: centerY, level: g4 },
-          },
-        ],
-      };
-    }
-
-    // 5. Half Adder (Sum = XOR, Carry = AND)
-    if (expId.includes('half-adder') || expText.includes('half adder')) {
-      const sum: LogicLevel = swA !== swB ? 1 : 0;
-      const carry: LogicLevel = (swA === 1 && swB === 1) ? 1 : 0;
-
-      return {
-        formula: 'Sum = A ⊕ B  |  Carry = A • B',
-        title: 'Binary Half Adder Schematic',
-        gates: [
-          {
-            id: 'g-xor',
-            type: 'XOR',
-            x: centerX,
-            y: centerY - 55,
-            inputs: [
-              { label: 'A', wireX: centerX - 180, wireY: centerY - 70, level: swA },
-              { label: 'B', wireX: centerX - 180, wireY: centerY - 40, level: swB },
-            ],
-            output: { label: 'Sum (S)', wireX: centerX + 180, wireY: centerY - 55, level: sum },
-          },
-          {
-            id: 'g-and',
-            type: 'AND',
-            x: centerX,
-            y: centerY + 55,
-            inputs: [
-              { label: 'A', wireX: centerX - 180, wireY: centerY + 40, level: swA },
-              { label: 'B', wireX: centerX - 180, wireY: centerY + 70, level: swB },
-            ],
-            output: { label: 'Carry (C)', wireX: centerX + 180, wireY: centerY + 55, level: carry },
-          },
-        ],
-      };
-    }
-
-    // 6. Basic NOT Gate (Inverter)
-    if (expId.includes('not-gate') || expText.includes('inverter') || expText.includes('not gate')) {
-      const outNot: LogicLevel = swA === 1 ? 0 : 1;
-      return {
-        formula: 'Y = A\' (Inversion)',
-        title: '7404 Hex Inverter Gate Schematic',
-        gates: [
-          {
-            id: 'g-not',
-            type: 'NOT',
+            id: 'g-555',
+            type: '555',
             x: centerX,
             y: centerY,
-            inputs: [{ label: 'Input A', wireX: centerX - 180, wireY: centerY, level: swA }],
-            output: { label: "Output Y (A')", wireX: centerX + 180, wireY: centerY, level: outNot },
+            layer: 1,
+            entranceX: centerX - 50,
+            exitX: centerX + 50,
+            inputs: [
+              { sourceId: 'VCC', label: 'VCC (8)', portX: centerX - 50, portY: centerY - 40, level: 1 },
+              { sourceId: 'TRIG', label: 'TRIG (2)', portX: centerX - 50, portY: centerY - 15, level: clkVal },
+              { sourceId: 'THRES', label: 'THRES (6)', portX: centerX - 50, portY: centerY + 15, level: clkVal },
+              { sourceId: 'GND', label: 'GND (1)', portX: centerX - 50, portY: centerY + 40, level: 0 },
+            ],
+            output: { label: 'OUT Pin 3 (Square Wave)', portX: centerX + 50, portY: centerY, level: clkVal },
+          },
+        ],
+        wires: [
+          {
+            id: 'wire-555-out',
+            fromX: centerX + 50,
+            fromY: centerY,
+            toX: width - 180,
+            toY: centerY,
+            level: clkVal,
+            label: 'CLK Out',
           },
         ],
       };
     }
 
-    // 7. Basic OR Gate
-    if (expId.includes('or-gate') || expText.includes('or gate')) {
-      const outOr: LogicLevel = (swA === 1 || swB === 1) ? 1 : 0;
+    // 2. Specialized Sequential Block: 7476 Dual JK Flip-Flop
+    if (expText.includes('7476') || expText.includes('jk')) {
+      const jVal = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed ? 1 : 0;
+      const kVal = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed ? 1 : 0;
+      const qVal: LogicLevel = isAnyLedLit ? 1 : 0;
       return {
-        formula: 'Y = A + B',
-        title: '7432 Quad 2-Input OR Gate Schematic',
+        formula: 'Q(next) = J • Q\' + K\' • Q',
+        title: '7476 Dual Master-Slave JK Flip-Flop',
         gates: [
           {
-            id: 'g-or',
-            type: 'OR',
+            id: 'g-jk',
+            type: 'JK_FF',
             x: centerX,
             y: centerY,
+            layer: 1,
+            entranceX: centerX - 50,
+            exitX: centerX + 50,
             inputs: [
-              { label: 'Input A', wireX: centerX - 180, wireY: centerY - 18, level: swA },
-              { label: 'Input B', wireX: centerX - 180, wireY: centerY + 18, level: swB },
+              { sourceId: 'J', label: 'J Input', portX: centerX - 50, portY: centerY - 25, level: jVal },
+              { sourceId: 'CLK', label: 'CLK Clock', portX: centerX - 50, portY: centerY, level: 1 },
+              { sourceId: 'K', label: 'K Input', portX: centerX - 50, portY: centerY + 25, level: kVal },
             ],
-            output: { label: 'Output Y (A + B)', wireX: centerX + 180, wireY: centerY, level: outOr },
+            output: { label: 'Q State Output', portX: centerX + 50, portY: centerY, level: qVal },
+          },
+        ],
+        wires: [
+          {
+            id: 'wire-jk-out',
+            fromX: centerX + 50,
+            fromY: centerY,
+            toX: width - 180,
+            toY: centerY,
+            level: qVal,
+            label: 'Q',
           },
         ],
       };
     }
 
-    // 8. Arbitrary Dynamic Boolean Compiler Evaluation Fallback
+    // 3. Universal Topological DAG Schematic Synthesis (Standard Experiments + Arbitrary Desmos Formulas)
+    let candidateFormula = 'Y = A • B';
+    let title = activeExp?.title || 'Boolean Logic Diagram';
+
+    if (activeExp?.title?.includes('Compiled Logic:')) {
+      candidateFormula = activeExp.title.replace('Compiled Logic:', '').trim();
+    } else if (activeExp?.theory?.includes('Formula:') || activeExp?.theory?.includes('equation:')) {
+      const match = activeExp.theory.match(/(?:Formula|equation):\s*([^\.\n]+)/i);
+      if (match && match[1]) candidateFormula = match[1].trim();
+    } else {
+      if (expText.includes('majority') || expText.includes('voter')) candidateFormula = 'Y = (A • B) + (B • C) + (A • C)';
+      else if (expText.includes('multiplexer') || expText.includes('mux')) candidateFormula = "Y = (S' • D0) + (S • D1)";
+      else if (expText.includes('half adder')) candidateFormula = 'Y = A ⊕ B';
+      else if (expText.includes('xor') && expText.includes('nand')) candidateFormula = "Y = ((A • (A • B)')' • (B • (A • B)')')'";
+      else if (expText.includes('comparator') || expText.includes('equality')) candidateFormula = "Y = (A • B) + (A' • B')";
+      else if (expText.includes('nand')) candidateFormula = "Y = (A • B)'";
+      else if (expText.includes('nor')) candidateFormula = "Y = (A + B)'";
+      else if (expText.includes('not') || expText.includes('inverter')) candidateFormula = "Y = A'";
+      else if (expText.includes('or')) candidateFormula = 'Y = A + B';
+      else if (expText.includes('and')) candidateFormula = 'Y = A • B';
+    }
+
     try {
-      let candidate = '';
-      if (activeExp?.title?.includes('Compiled Logic:')) {
-        candidate = activeExp.title.replace('Compiled Logic:', '').trim();
-      } else if (activeExp?.theory?.includes('Formula:') || activeExp?.theory?.includes('equation:')) {
-        const match = activeExp.theory.match(/(?:Formula|equation):\s*([^\.\n]+)/i);
-        if (match) candidate = match[1].trim();
-      }
+      const parsed = BooleanCompiler.parseExpression(candidateFormula);
+      const ops = BooleanCompiler.linearizeGates(parsed.ast);
 
-      if (candidate) {
-        const parsed = BooleanCompiler.parseExpression(candidate);
-        const ops = BooleanCompiler.linearizeGates(parsed.ast);
+      if (ops.length > 0) {
+        // Read input switch levels from current digital twin state
+        const env: Record<string, 0 | 1> = {};
+        parsed.variables.forEach((v) => {
+          const sw = circuitState.switches.find(
+            (s) => s.id === `sw-${v.toLowerCase()}` || s.label.toUpperCase().includes(v.toUpperCase())
+          );
+          env[v] = sw?.isClosed ? 1 : 0;
+        });
 
-        if (ops.length > 0) {
-          // Switch levels from live circuit switches
-          const env: Record<string, 0 | 1> = {};
-          parsed.variables.forEach((v) => {
-            const sw = circuitState.switches.find((s) => s.id === `sw-${v.toLowerCase()}`);
-            env[v] = sw?.isClosed ? 1 : 0;
+        // Compute topological layers (ranks) for each gate
+        const gateLayerMap: Record<string, number> = {};
+        for (const op of ops) {
+          let maxInLayer = 0;
+          for (const inp of op.inputs) {
+            if (gateLayerMap[inp] !== undefined) {
+              maxInLayer = Math.max(maxInLayer, gateLayerMap[inp]);
+            }
+          }
+          gateLayerMap[op.id] = maxInLayer + 1;
+        }
+
+        const maxLayer = Math.max(...Object.values(gateLayerMap), 1);
+
+        // Group operations by layer
+        const layerGroups: Record<number, CompiledGateOp[]> = {};
+        for (let l = 1; l <= maxLayer; l++) layerGroups[l] = [];
+        for (const op of ops) {
+          layerGroups[gateLayerMap[op.id]].push(op);
+        }
+
+        // Layout bounds (leaving room for inputs on left and output lamp on right)
+        const leftBoundary = Math.max(260, width * 0.24);
+        const rightBoundary = Math.min(width - 240, width * 0.74);
+        const colStep = maxLayer > 1 ? (rightBoundary - leftBoundary) / (maxLayer - 1) : 0;
+
+        // Evaluate logic levels for all gates in topological order
+        const gateLevels: Record<string, LogicLevel> = {};
+        for (const op of ops) {
+          const inLevels: LogicLevel[] = op.inputs.map((inp) => {
+            const inpStr = String(inp);
+            if (env[inpStr] !== undefined) return env[inpStr];
+            if (gateLevels[inpStr] !== undefined) return gateLevels[inpStr];
+            if (inpStr === '1') return 1;
+            if (inpStr === '0') return 0;
+            return 0;
           });
 
-          const gateLevels: Record<string, LogicLevel> = {};
-          const numGates = ops.length;
-          const dynamicGates: GateNode[] = ops.map((op, idx) => {
-            const inLevels: LogicLevel[] = op.inputs.map((inp) => {
+          let outLevel: LogicLevel = 0;
+          if (op.op === 'NOT') outLevel = inLevels[0] === 1 ? 0 : 1;
+          else if (op.op === 'AND') outLevel = inLevels.every((l) => l === 1) ? 1 : 0;
+          else if (op.op === 'OR') outLevel = inLevels.some((l) => l === 1) ? 1 : 0;
+          else if (op.op === 'XOR') outLevel = inLevels[0] !== inLevels[1] ? 1 : 0;
+          else if (op.op === 'NAND') outLevel = inLevels.every((l) => l === 1) ? 0 : 1;
+          else if (op.op === 'NOR') outLevel = inLevels.some((l) => l === 1) ? 0 : 1;
+          else if (op.op === 'XNOR') outLevel = inLevels[0] === inLevels[1] ? 1 : 0;
+          gateLevels[op.outputId] = outLevel;
+        }
+
+        // Compute gate coordinates and port locations
+        const gateNodes: GateNode[] = [];
+        const gateNodeMap: Record<string, GateNode> = {};
+
+        for (let l = 1; l <= maxLayer; l++) {
+          const group = layerGroups[l] || [];
+          const K = group.length;
+          const verticalSpacing = Math.min(130, Math.max(85, (height - 240) / Math.max(K, 1)));
+          const startY = centerY - ((K - 1) * verticalSpacing) / 2;
+          const gateX = maxLayer === 1 ? centerX : leftBoundary + (l - 1) * colStep;
+
+          group.forEach((op, j) => {
+            const gateY = startY + j * verticalSpacing;
+            const entranceX = op.op === 'XOR' || op.op === 'XNOR' ? gateX - 36 : gateX - 28;
+            const exitX =
+              op.op === 'NOT'
+                ? gateX + 23
+                : op.op === 'NAND' || op.op === 'NOR'
+                ? gateX + 33
+                : gateX + 28;
+
+            // Compute input ports
+            const inputPorts: GatePort[] = op.inputs.map((inp, iIdx) => {
+              let portY = gateY;
+              if (op.op !== 'NOT') {
+                if (op.inputs.length === 2) {
+                  portY = gateY + (iIdx === 0 ? -14 : 14);
+                } else if (op.inputs.length >= 3) {
+                  const step = 28 / (op.inputs.length - 1);
+                  portY = gateY - 14 + iIdx * step;
+                }
+              }
+
               const inpStr = String(inp);
-              if (env[inpStr] !== undefined) return env[inpStr];
-              if (gateLevels[inpStr] !== undefined) return gateLevels[inpStr];
-              if (inpStr === '1') return 1;
-              if (inpStr === '0') return 0;
-              return 0;
+              const inLevel =
+                env[inpStr] !== undefined
+                  ? env[inpStr]
+                  : gateLevels[inpStr] !== undefined
+                  ? gateLevels[inpStr]
+                  : 0;
+
+              return {
+                sourceId: inpStr,
+                label: env[inpStr] !== undefined ? inpStr : '',
+                portX: entranceX,
+                portY,
+                level: inLevel,
+              };
             });
 
-            let outLevel: LogicLevel = 0;
-            if (op.op === 'NOT') outLevel = inLevels[0] === 1 ? 0 : 1;
-            else if (op.op === 'AND') outLevel = inLevels.every((l) => l === 1) ? 1 : 0;
-            else if (op.op === 'OR') outLevel = inLevels.some((l) => l === 1) ? 1 : 0;
-            else if (op.op === 'XOR') outLevel = inLevels[0] !== inLevels[1] ? 1 : 0;
-            else if (op.op === 'NAND') outLevel = inLevels.every((l) => l === 1) ? 0 : 1;
-            else if (op.op === 'NOR') outLevel = inLevels.some((l) => l === 1) ? 0 : 1;
-            else if (op.op === 'XNOR') outLevel = inLevels[0] === inLevels[1] ? 1 : 0;
-            gateLevels[op.outputId] = outLevel;
+            const outLevel = gateLevels[op.outputId] ?? 0;
 
-            const col = Math.floor(idx / 2);
-            const rowOffset = (idx % 2 === 0 ? -1 : 1) * 75;
-            const gateX = centerX - 120 + col * 170;
-            const gateY = numGates === 1 ? centerY : centerY + rowOffset;
-
-            return {
+            const node: GateNode = {
               id: op.id,
               type: op.op,
               x: gateX,
               y: gateY,
-              inputs: op.inputs.map((inp, iIdx) => ({
-                label: String(inp),
-                wireX: gateX - 110,
-                wireY: gateY + (iIdx === 0 ? -15 : 15),
-                level: inLevels[iIdx] ?? 0,
-              })),
+              layer: l,
+              entranceX,
+              exitX,
+              inputs: inputPorts,
               output: {
                 label: op.outputLabel,
-                wireX: gateX + 90,
-                wireY: gateY,
+                portX: exitX,
+                portY: gateY,
                 level: outLevel,
               },
             };
-          });
 
-          return {
-            formula: parsed.formula,
-            title: activeExp?.title || 'Compiled Logic Schematic',
-            gates: dynamicGates,
-          };
+            gateNodes.push(node);
+            gateNodeMap[op.id] = node;
+          });
         }
+
+        // Map primary input switch Y positions on the left panel
+        const numSwitches = parsed.variables.length || 1;
+        const swSpacing = 44;
+        const swStartY = centerY - ((numSwitches - 1) * swSpacing) / 2;
+        const switchYMap: Record<string, number> = {};
+        parsed.variables.forEach((v, idx) => {
+          switchYMap[v] = swStartY + idx * swSpacing;
+        });
+
+        // Generate clean Manhattan interconnect wires
+        const wires: SchematicWire[] = [];
+        const inputBusX = 175; // Right edge of Logic Inputs HUD panel
+
+        // 1. Connect input ports to sources (upstream gate outputs OR primary switch inputs)
+        gateNodes.forEach((gate) => {
+          gate.inputs.forEach((port, pIdx) => {
+            const srcId = port.sourceId;
+
+            if (gateNodeMap[srcId]) {
+              // Driven by an upstream gate
+              const upGate = gateNodeMap[srcId];
+              wires.push({
+                id: `wire-${upGate.id}-to-${gate.id}-in${pIdx}`,
+                fromX: upGate.output.portX,
+                fromY: upGate.output.portY,
+                toX: port.portX,
+                toY: port.portY,
+                level: port.level,
+                label: upGate.output.label,
+              });
+            } else {
+              // Driven by a primary variable switch
+              const startY = switchYMap[srcId] ?? port.portY;
+              wires.push({
+                id: `wire-sw-${srcId}-to-${gate.id}-in${pIdx}`,
+                fromX: inputBusX,
+                fromY: startY,
+                toX: port.portX,
+                toY: port.portY,
+                level: port.level,
+                label: srcId,
+              });
+            }
+          });
+        });
+
+        // 2. Connect the final output gate into the Circuit Output LED indicator
+        const terminalGate =
+          gateNodes.find(
+            (g) => !gateNodes.some((other) => other.inputs.some((inp) => inp.sourceId === g.id))
+          ) || gateNodes[gateNodes.length - 1];
+
+        if (terminalGate) {
+          const outputBusX = width - 170; // Left edge of Circuit Output HUD panel
+          wires.push({
+            id: `wire-final-to-output`,
+            fromX: terminalGate.output.portX,
+            fromY: terminalGate.output.portY,
+            toX: outputBusX,
+            toY: centerY,
+            level: terminalGate.output.level,
+            label: parsed.formula,
+          });
+        }
+
+        return {
+          formula: parsed.formula,
+          title,
+          gates: gateNodes,
+          wires,
+        };
       }
-    } catch {
-      // Fall through to default
+    } catch (err) {
+      console.warn('Topological schematic synthesis fallback:', err);
     }
 
-    // Default: 2-Input AND Gate (7408)
-    const outAnd: LogicLevel = (swA === 1 && swB === 1) ? 1 : 0;
+    // Default Baseline: 2-Input AND Gate (7408)
+    const swA = circuitState.switches.find((s) => s.id === 'sw-a')?.isClosed ? 1 : 0;
+    const swB = circuitState.switches.find((s) => s.id === 'sw-b')?.isClosed ? 1 : 0;
+    const outAnd: LogicLevel = swA === 1 && swB === 1 ? 1 : 0;
+
     return {
       formula: 'Y = A • B',
       title: '7408 Quad 2-Input AND Gate Schematic',
@@ -432,12 +404,20 @@ export const BooleanDiagramCanvas: React.FC = () => {
           type: 'AND',
           x: centerX,
           y: centerY,
+          layer: 1,
+          entranceX: centerX - 28,
+          exitX: centerX + 28,
           inputs: [
-            { label: 'Input A', wireX: centerX - 180, wireY: centerY - 18, level: swA },
-            { label: 'Input B', wireX: centerX - 180, wireY: centerY + 18, level: swB },
+            { sourceId: 'A', label: 'A', portX: centerX - 28, portY: centerY - 14, level: swA },
+            { sourceId: 'B', label: 'B', portX: centerX - 28, portY: centerY + 14, level: swB },
           ],
-          output: { label: 'Output Y (A • B)', wireX: centerX + 180, wireY: centerY, level: outAnd },
+          output: { label: 'A • B', portX: centerX + 28, portY: centerY, level: outAnd },
         },
+      ],
+      wires: [
+        { id: 'w-a', fromX: 175, fromY: centerY - 22, toX: centerX - 28, toY: centerY - 14, level: swA, label: 'A' },
+        { id: 'w-b', fromX: 175, fromY: centerY + 22, toX: centerX - 28, toY: centerY + 14, level: swB, label: 'B' },
+        { id: 'w-out', fromX: centerX + 28, fromY: centerY, toX: width - 170, toY: centerY, level: outAnd, label: 'Y = A • B' },
       ],
     };
   };
@@ -471,7 +451,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
         }
       }
 
-      const { gates } = deriveGates(width, height);
+      const { gates, wires } = deriveSchematic(width, height);
 
       // Helper: Draw standard IEEE Logic Gate Symbol
       const drawGateSymbol = (gate: GateNode) => {
@@ -482,7 +462,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
         ctx.save();
         ctx.strokeStyle = '#C8D9E6'; // Sky Blue border
         ctx.lineWidth = 2.5;
-        ctx.fillStyle = '#1b2735';   // Dark Navy fill
+        ctx.fillStyle = '#1b2735'; // Dark Navy fill
 
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 8;
@@ -509,12 +489,15 @@ export const BooleanDiagramCanvas: React.FC = () => {
           ctx.lineTo(x + w / 3, y);
           ctx.lineTo(x - w / 2, y + h / 2);
           ctx.closePath();
+        } else if (type === '555' || type === 'JK_FF') {
+          // Dual In-Line rectangular IC block
+          ctx.roundRect(x - 50, y - 55, 100, 110, 8);
         }
 
         ctx.fill();
         ctx.stroke();
 
-        // Additional input arc for XOR / XNOR Gate
+        // Additional curved input arc for XOR / XNOR Gate
         if (type === 'XOR' || type === 'XNOR') {
           ctx.beginPath();
           ctx.moveTo(x - w / 2 - 8, y - h / 2);
@@ -542,8 +525,9 @@ export const BooleanDiagramCanvas: React.FC = () => {
         ctx.restore();
       };
 
-      // Helper: Draw Orthogonal Wires with Logic State & Pulse Animation
-      const drawWire = (x1: number, y1: number, x2: number, y2: number, level: LogicLevel) => {
+      // Helper: Draw Orthogonal Manhattan Wires with Logic State & Pulse Animation
+      const drawWire = (wire: SchematicWire) => {
+        const { fromX, fromY, toX, toY, level, label } = wire;
         const isHigh = level === 1;
 
         ctx.save();
@@ -555,43 +539,53 @@ export const BooleanDiagramCanvas: React.FC = () => {
           ctx.shadowBlur = 6;
         }
 
-        // Orthogonal Manhattan step routing
-        const midX = (x1 + x2) / 2;
+        // Manhattan 3-segment routing with midpoint step
+        const midX = (fromX + toX) / 2;
+
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(midX, y1);
-        ctx.lineTo(midX, y2);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(midX, fromY);
+        ctx.lineTo(midX, toY);
+        ctx.lineTo(toX, toY);
         ctx.stroke();
 
-        // Solder junction dots
+        // Solder connection points
         ctx.fillStyle = isHigh ? '#FFFFFF' : '#567C8D';
         ctx.beginPath();
-        ctx.arc(x1, y1, 3, 0, Math.PI * 2);
-        ctx.arc(x2, y2, 3, 0, Math.PI * 2);
+        ctx.arc(fromX, fromY, 2.5, 0, Math.PI * 2);
+        ctx.arc(toX, toY, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Animated traveling signal charge pulse when HIGH
+        // Wire signal label
+        if (label) {
+          ctx.fillStyle = isHigh ? '#FFFFFF' : '#C8D9E6';
+          ctx.font = '600 10px "JetBrains Mono", monospace';
+          ctx.textAlign = 'left';
+          // Print label near the source
+          ctx.fillText(label, fromX + 8, fromY - 6);
+        }
+
+        // Animated traveling electron pulse when HIGH
         if (isHigh) {
           const t = pulsePhaseRef.current;
-          let px = 0;
-          let py = 0;
-
-          const seg1 = Math.abs(midX - x1);
-          const seg2 = Math.abs(y2 - y1);
-          const seg3 = Math.abs(x2 - midX);
+          const seg1 = Math.abs(midX - fromX);
+          const seg2 = Math.abs(toY - fromY);
+          const seg3 = Math.abs(toX - midX);
           const total = seg1 + seg2 + seg3 || 1;
 
           const curDist = t * total;
+          let px = 0;
+          let py = 0;
+
           if (curDist <= seg1) {
-            px = x1 + (midX - x1) * (curDist / seg1);
-            py = y1;
+            px = fromX + (midX - fromX) * (curDist / (seg1 || 1));
+            py = fromY;
           } else if (curDist <= seg1 + seg2) {
             px = midX;
-            py = y1 + (y2 - y1) * ((curDist - seg1) / seg2);
+            py = fromY + (toY - fromY) * ((curDist - seg1) / (seg2 || 1));
           } else {
-            px = midX + (x2 - midX) * ((curDist - seg1 - seg2) / seg3);
-            py = y2;
+            px = midX + (toX - midX) * ((curDist - seg1 - seg2) / (seg3 || 1));
+            py = toY;
           }
 
           ctx.fillStyle = '#FFFFFF';
@@ -605,37 +599,14 @@ export const BooleanDiagramCanvas: React.FC = () => {
         ctx.restore();
       };
 
-      // Draw all gates and their interconnect wires
+      // 1. Draw all Interconnect Wires first
+      wires.forEach((wire) => {
+        drawWire(wire);
+      });
+
+      // 2. Draw all Gates over wires
       gates.forEach((gate) => {
-        // Connect each input wire to the gate entrance
-        gate.inputs.forEach((input) => {
-          const entranceX = gate.type === 'XOR' ? gate.x - 36 : gate.x - 28;
-          drawWire(input.wireX, input.wireY, entranceX, input.wireY, input.level);
-
-          // Input Pin Label
-          ctx.fillStyle = input.level === 1 ? '#FFFFFF' : '#C8D9E6';
-          ctx.font = '600 10px "JetBrains Mono", monospace';
-          ctx.textAlign = 'right';
-          ctx.fillText(input.label, input.wireX - 8, input.wireY + 3);
-        });
-
-        // Draw Gate Symbol
         drawGateSymbol(gate);
-
-        // Connect gate output to destination
-        const exitX = (gate.type === 'NAND' || gate.type === 'NOR')
-          ? gate.x + 33
-          : gate.type === 'NOT'
-          ? gate.x + 23
-          : gate.x + 28;
-
-        drawWire(exitX, gate.y, gate.output.wireX, gate.output.wireY, gate.output.level);
-
-        // Output Node Badge
-        ctx.fillStyle = gate.output.level === 1 ? '#FFFFFF' : '#567C8D';
-        ctx.font = 'bold 11px "JetBrains Mono", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(gate.output.label, gate.output.wireX + 8, gate.output.wireY + 4);
       });
 
       animId = requestAnimationFrame(render);
@@ -648,7 +619,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
   // Derive title & formula for header badge
   const canvasW = canvasRef.current?.width || 800;
   const canvasH = canvasRef.current?.height || 500;
-  const { formula, title } = deriveGates(canvasW, canvasH);
+  const { formula, title } = deriveSchematic(canvasW, canvasH);
 
   return (
     <div className="relative w-full h-full bg-[#131d27] flex flex-col justify-between overflow-hidden touch-none select-none">
@@ -668,7 +639,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
           </div>
         </div>
 
-        {/* Canonical Boolean Algebra Expression */}
+        {/* Canonical Boolean Algebra Expression Badge */}
         <div className="bg-[#131d27]/80 px-4 py-1.5 rounded-full border border-[#567C8D]/40 text-xs font-mono font-semibold text-[#C8D9E6] shadow-sm flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
           <span>{formula}</span>
