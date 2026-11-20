@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { defaultGrid, PITCH } from '../../engine/grid';
 import { useCircuitStore } from '../../store/useCircuitStore';
 
@@ -22,6 +22,8 @@ export const BreadboardCanvas: React.FC = () => {
   const activeExp = experiments.find((e) => e.id === activeExpId);
   const currentStep = activeExp?.steps[currentStepIndex];
 
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; vpX: number; vpY: number } | null>(null);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
 
   // Calculate stationary centered position
@@ -63,9 +65,6 @@ export const BreadboardCanvas: React.FC = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = canvas.parentElement?.clientWidth ? canvas.parentElement.clientWidth * dpr : window.innerWidth * dpr;
       canvas.height = canvas.parentElement?.clientHeight ? canvas.parentElement.clientHeight * dpr : window.innerHeight * dpr;
-      
-      const stationary = getStationaryCenter();
-      setViewport(stationary);
     };
 
     handleResize();
@@ -107,10 +106,10 @@ export const BreadboardCanvas: React.FC = () => {
       const bbW = dims.width;
       const bbH = dims.height;
 
-      // Outer shadow
-      ctx.shadowColor = 'rgba(19, 29, 39, 0.4)';
-      ctx.shadowBlur = 32;
-      ctx.shadowOffsetY = 8;
+      // Outer floating 3D workbench shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 48;
+      ctx.shadowOffsetY = 16;
 
       // Breadboard body: refined warm beige #F5EFEB
       ctx.fillStyle = '#F5EFEB';
@@ -543,16 +542,50 @@ export const BreadboardCanvas: React.FC = () => {
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     lastTouchRef.current = { x: e.clientX, y: e.clientY };
+    dragStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      vpX: viewport.x,
+      vpY: viewport.y,
+    };
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture fails
+    }
   };
 
-  const handlePointerMove = (_e: React.PointerEvent<HTMLCanvasElement>) => {
-    // Kept stationary: breadboard remains locked in its centered position
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.clientX;
+    const dy = e.clientY - dragStartRef.current.clientY;
+
+    if (!isDragging && Math.hypot(dx, dy) > 4) {
+      setIsDragging(true);
+    }
+
+    if (isDragging || Math.hypot(dx, dy) > 4) {
+      setViewport({
+        x: dragStartRef.current.vpX + dx,
+        y: dragStartRef.current.vpY + dy,
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (lastTouchRef.current) {
-      const moved = Math.hypot(e.clientX - lastTouchRef.current.x, e.clientY - lastTouchRef.current.y);
-      if (moved < 8) {
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture release fails
+    }
+
+    if (dragStartRef.current) {
+      const dx = e.clientX - dragStartRef.current.clientX;
+      const dy = e.clientY - dragStartRef.current.clientY;
+      const totalMoved = Math.hypot(dx, dy);
+
+      // If clicked without dragging (< 6px), treat as pin click or probe
+      if (totalMoved < 6) {
         const rect = canvasRef.current?.getBoundingClientRect();
         if (rect) {
           const clickX = e.clientX - rect.left;
@@ -568,36 +601,54 @@ export const BreadboardCanvas: React.FC = () => {
         }
       }
     }
+
+    dragStartRef.current = null;
     lastTouchRef.current = null;
+    setIsDragging(false);
+  };
+
+  const handleDoubleClick = () => {
+    const stationary = getStationaryCenter();
+    setViewport(stationary);
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    // Gentle bounded zoom around center while keeping stationary alignment
-    const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
-    const newScale = Math.max(0.45, Math.min(1.2, viewport.scale * zoomFactor));
-
     const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 3;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-    const newX = centerX - (centerX - viewport.x) * (newScale / viewport.scale);
-    const newY = centerY - (centerY - viewport.y) * (newScale / viewport.scale);
+    // Smooth bounded zoom targeting the cursor focal point
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    const newScale = Math.max(0.35, Math.min(2.5, viewport.scale * zoomFactor));
+
+    // Keep point under cursor stationary during zoom
+    const newX = mouseX - (mouseX - viewport.x) * (newScale / viewport.scale);
+    const newY = mouseY - (mouseY - viewport.y) * (newScale / viewport.scale);
 
     setViewport({ scale: newScale, x: newX, y: newY });
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-black touch-none">
+    <div className="relative w-full h-full overflow-hidden bg-[#131d27] touch-none">
       <canvas
         ref={canvasRef}
-        className={`w-full h-full block ${isProbeMode ? 'cursor-crosshair' : 'cursor-default'}`}
+        className={`w-full h-full block ${
+          isProbeMode
+            ? 'cursor-crosshair'
+            : isDragging
+            ? 'cursor-grabbing'
+            : 'cursor-grab'
+        }`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={() => {
+          dragStartRef.current = null;
           lastTouchRef.current = null;
+          setIsDragging(false);
         }}
+        onDoubleClick={handleDoubleClick}
         onWheel={handleWheel}
       />
     </div>
