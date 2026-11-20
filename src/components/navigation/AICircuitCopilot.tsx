@@ -39,6 +39,8 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
     { label: 'Equation: Y = !(A & B) + C', query: 'Y = !(A & B) + C' },
     { label: '2:1 Multiplexer (Mux)', query: 'To construct and verify a 2:1 multiplexer using IC 7404 and IC 7408 on breadboard' },
     { label: '3-Input Majority Voter', query: 'Design a 3-input majority voting circuit where LED turns ON when ≥ 2 inputs are HIGH' },
+    { label: 'AND from NAND (7400)', query: 'To construct an AND gate using only IC 7400 Quad NAND gates' },
+    { label: 'Modulo-4 Binary Counter', query: 'To construct a modulo-4 binary up-counter using IC 7476 Dual JK Flip-Flop' },
     { label: 'XOR from 4 NAND Gates', query: 'To synthesize an XOR logic gate using only IC 7400 Quad NAND gates' },
     { label: '1-Bit Full Adder', query: 'To construct a 1-bit full adder circuit generating Sum and Carry-out outputs' },
     { label: 'Active-Low SR Latch', query: 'To construct an active-low Set-Reset (SR) bistable memory latch' },

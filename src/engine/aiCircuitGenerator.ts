@@ -34,6 +34,8 @@ export class AICircuitGenerator {
       rawExperiment = this.synthesizeLightDetector();
     } else if (query.includes('xor') && query.includes('nand')) {
       rawExperiment = this.synthesizeXorFromNand();
+    } else if (query.includes('and') && query.includes('nand')) {
+      rawExperiment = this.synthesizeAndFromNand();
     } else if (query.includes('sr') || query.includes('latch') || query.includes('flip flop')) {
       rawExperiment = this.synthesizeSRLatch();
     } else {
@@ -766,6 +768,167 @@ export class AICircuitGenerator {
           title: 'Connect Input Switches A and B',
           instruction: 'Wire Switch A to Pin 1 (f15) and Switch B to Pin 2 (f16).',
           subText: 'Toggle switches to verify XOR truth table.',
+          highlightHoles: ['f15', 'f16'],
+          switchToAdd: {
+            id: 'sw-a',
+            holeA: 'f15',
+            holeB: 'BOT_VCC_15',
+            isClosed: false,
+            label: 'Input A',
+          },
+          switchesToAdd: [
+            {
+              id: 'sw-b',
+              holeA: 'f16',
+              holeB: 'BOT_VCC_16',
+              isClosed: false,
+              label: 'Input B',
+            },
+          ],
+        },
+      ],
+    };
+  }
+
+  // Synthesis: 2-Input AND gate constructed purely from IC 7400 Quad NAND
+  public static synthesizeAndFromNand(): Experiment {
+    return {
+      id: `ai-andnand-${Date.now()}`,
+      title: 'AND Gate Synthesized from IC 7400 Quad NAND',
+      category: 'Universal Logic Realization',
+      aim: 'To construct and verify a 2-input AND gate using only IC 7400 Quad NAND gates.',
+      theory:
+        'An AND gate is realized from NAND gates by inverting the output of a 2-input NAND gate: Y = ((A • B)\')\' = A • B. Gate 1 (Pins 1, 2 -> Pin 3) computes (A • B)\', and Gate 2 (Pins 4, 5 tied to Pin 3 -> Pin 6) acts as an inverter, yielding A • B.',
+      apparatus: [
+        { id: 'bb', name: '830-Point Breadboard', count: 1, description: 'Solderless breadboard' },
+        { id: 'ic7400', name: 'IC 7400 Quad 2-Input NAND', count: 1, description: '14-pin DIP package' },
+        { id: 'led', name: 'Red 5mm Indicator LED', count: 1, description: 'Displays AND output' },
+        { id: 'res', name: '330Ω Resistor', count: 1, description: 'Current limiter', colorCode: 'Orange-Orange-Brown-Gold' },
+        { id: 'sw', name: '2x SPST Input Switches', count: 2, description: 'Inputs A and B' },
+        { id: 'wires', name: 'M-M Jumper Wires', count: 8, description: 'Power and signal jumpers' },
+      ],
+      truthTable: {
+        headers: ['Input A', 'Input B', 'NAND Stage ((A • B)\')', 'Output Y (AND)', 'LED State'],
+        rows: [
+          [0, 0, 1, 0, 'OFF (Low: 0 • 0 = 0)'],
+          [0, 1, 1, 0, 'OFF (Low: 0 • 1 = 0)'],
+          [1, 0, 1, 0, 'OFF (Low: 1 • 0 = 0)'],
+          [1, 1, 0, 1, 'ON (Lit: 1 • 1 = 1)'],
+        ],
+      },
+      steps: [
+        {
+          stepNumber: 1,
+          title: 'Bridge Power Rails',
+          instruction: 'Connect Top Red (+) to Bottom Red (+) and Top Blue (-) to Bottom Blue (-).',
+          subText: 'Distributes +5V and GND across both breadboard power rails.',
+          highlightHoles: ['TOP_VCC_1', 'BOT_VCC_1'],
+          wireToAdd: {
+            id: 'wire-vcc-andnand',
+            fromHole: 'TOP_VCC_1',
+            toHole: 'BOT_VCC_1',
+            color: 'red',
+          },
+          wiresToAdd: [
+            {
+              id: 'wire-gnd-andnand',
+              fromHole: 'TOP_GND_1',
+              toHole: 'BOT_GND_1',
+              color: 'blue',
+            },
+          ],
+        },
+        {
+          stepNumber: 2,
+          title: 'Insert IC 7400 Across Center Trench',
+          instruction: 'Place IC 7400 across Rows 15-21 with orientation notch facing LEFT.',
+          subText: 'Spans the middle divider groove so opposite pins remain isolated.',
+          highlightHoles: ['f15', 'e15', 'f21', 'e21'],
+          icToAdd: {
+            id: 'ic-7400-andnand',
+            model: '7400',
+            startRow: 15,
+            notchFacing: 'LEFT',
+            pinHoles: {
+              1: 'f15', 2: 'f16', 3: 'f17', 4: 'f18', 5: 'f19', 6: 'f20', 7: 'f21',
+              8: 'e21', 9: 'e20', 10: 'e19', 11: 'e18', 12: 'e17', 13: 'e16', 14: 'e15',
+            },
+          },
+        },
+        {
+          stepNumber: 3,
+          title: 'Wire IC Power & Ground',
+          instruction: 'Connect Pin 14 (e15) to +5V and Pin 7 (f21) to GND.',
+          subText: 'Powers the IC internally.',
+          highlightHoles: ['e15', 'f21'],
+          wireToAdd: {
+            id: 'wire-7400-vcc',
+            fromHole: 'e15',
+            toHole: 'TOP_VCC_15',
+            color: 'red',
+          },
+          wiresToAdd: [
+            {
+              id: 'wire-7400-gnd',
+              fromHole: 'f21',
+              toHole: 'BOT_GND_21',
+              color: 'black',
+            },
+          ],
+        },
+        {
+          stepNumber: 4,
+          title: 'Cascade Stage 1 Output into Stage 2 Inverter',
+          instruction: 'Connect Jumper from Pin 3 (f17) to Pin 4 (f18), and bridge Pin 4 (f18) to Pin 5 (f19).',
+          subText: 'Gate 2 ties its two inputs together to invert Gate 1\'s NAND output into an AND signal.',
+          highlightHoles: ['f17', 'f18', 'f19'],
+          wireToAdd: {
+            id: 'wire-nand-cascade',
+            fromHole: 'f17',
+            toHole: 'f18',
+            color: 'yellow',
+          },
+          wiresToAdd: [
+            {
+              id: 'wire-nand-inv-bridge',
+              fromHole: 'f18',
+              toHole: 'f19',
+              color: 'orange',
+            },
+          ],
+        },
+        {
+          stepNumber: 5,
+          title: 'Connect Output Indicator LED and Resistor',
+          instruction: 'Route Pin 6 Output (f20) to Row 26. Connect LED from f26 to g26, and 330Ω to GND.',
+          subText: 'LED lights up when both inputs A and B are HIGH (+5V).',
+          highlightHoles: ['f20', 'f26', 'g26'],
+          wireToAdd: {
+            id: 'wire-andnand-out',
+            fromHole: 'f20',
+            toHole: 'f26',
+            color: 'green',
+          },
+          ledToAdd: {
+            id: 'led-andnand-out',
+            anodeHole: 'f26',
+            cathodeHole: 'g26',
+            color: 'red',
+            isLit: false,
+          },
+          resistorToAdd: {
+            id: 'res-andnand-limit',
+            fromHole: 'g26',
+            toHole: 'BOT_GND_26',
+            valueOhms: 330,
+            bands: ['orange', 'orange', 'brown', 'gold'],
+          },
+        },
+        {
+          stepNumber: 6,
+          title: 'Connect Input Switches A and B',
+          instruction: 'Wire Switch A to Pin 1 (f15) and Switch B to Pin 2 (f16).',
+          subText: 'Toggle switches to verify the 2-input AND truth table.',
           highlightHoles: ['f15', 'f16'],
           switchToAdd: {
             id: 'sw-a',

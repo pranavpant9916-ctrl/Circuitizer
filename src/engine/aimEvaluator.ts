@@ -185,6 +185,9 @@ export class AimEvaluator {
       } else if (q.includes('xor') && q.includes('nand')) {
         synthesized = (AICircuitGenerator as any).synthesizeXorFromNand();
         formula = 'Y = ((A • (AB)\')\' • (B • (AB)\')\')\' = A ⊕ B';
+      } else if (q.includes('and') && q.includes('nand')) {
+        synthesized = (AICircuitGenerator as any).synthesizeAndFromNand();
+        formula = 'Y = ((A • B)\')\' = A • B';
       } else if (q.includes('sr') || q.includes('latch') || q.includes('flip flop')) {
         synthesized = (AICircuitGenerator as any).synthesizeSRLatch();
         formula = 'Q(t+1) = S + R\' • Q(t)';
@@ -236,7 +239,7 @@ export class AimEvaluator {
       const title = e.title.toLowerCase();
       const aim = e.aim.toLowerCase();
       if (q.includes('half adder') && (title.includes('half adder') || aim.includes('half adder'))) return true;
-      if (q.includes('7400') || (q.includes('nand') && !q.includes('xor'))) {
+      if (q.includes('7400') || (q.includes('nand') && !q.includes('xor') && !q.includes('and'))) {
         if (title.includes('7400') || title.includes('nand')) return true;
       }
       if (q.includes('7402') || q.includes('nor')) {
