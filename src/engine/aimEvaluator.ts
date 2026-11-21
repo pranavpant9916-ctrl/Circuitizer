@@ -171,31 +171,31 @@ export class AimEvaluator {
       let adjustment = false;
 
       if (q.includes('majority') || q.includes('voter') || q.includes('voting')) {
-        synthesized = (AICircuitGenerator as any).synthesizeMajorityVoter();
+        synthesized = AICircuitGenerator.synthesizeMajorityVoter();
         formula = 'Y = (A • B) + (B • C) + (A • C)';
       } else if (q.includes('multiplexer') || q.includes('mux')) {
-        synthesized = (AICircuitGenerator as any).synthesizeMultiplexer();
+        synthesized = AICircuitGenerator.synthesizeMultiplexer();
         formula = 'Y = (S\' • D0) + (S • D1)';
       } else if (q.includes('comparator') || q.includes('equality') || q.includes('compare')) {
-        synthesized = (AICircuitGenerator as any).synthesizeComparator();
+        synthesized = AICircuitGenerator.synthesizeComparator();
         formula = 'Y = (A ⊙ B) = (A • B) + (A\' • B\')';
       } else if (q.includes('detector') || q.includes('darkness') || q.includes('light') || q.includes('alarm')) {
-        synthesized = (AICircuitGenerator as any).synthesizeLightDetector();
+        synthesized = AICircuitGenerator.synthesizeLightDetector();
         formula = 'Vout = (Vldr < Vref) ? 5V : 0V';
       } else if (q.includes('xor') && q.includes('nand')) {
-        synthesized = (AICircuitGenerator as any).synthesizeXorFromNand();
+        synthesized = AICircuitGenerator.synthesizeXorFromNand();
         formula = 'Y = ((A • (AB)\')\' • (B • (AB)\')\')\' = A ⊕ B';
       } else if (q.includes('and') && q.includes('nand')) {
-        synthesized = (AICircuitGenerator as any).synthesizeAndFromNand();
+        synthesized = AICircuitGenerator.synthesizeAndFromNand();
         formula = 'Y = ((A • B)\')\' = A • B';
       } else if (q.includes('sr') || q.includes('latch') || q.includes('flip flop')) {
-        synthesized = (AICircuitGenerator as any).synthesizeSRLatch();
+        synthesized = AICircuitGenerator.synthesizeSRLatch();
         formula = 'Q(t+1) = S + R\' • Q(t)';
       } else if (q.includes('full adder') || (q.includes('adder') && (q.includes('3') || q.includes('carry')))) {
-        synthesized = (AICircuitGenerator as any).synthesizeFullAdder();
+        synthesized = AICircuitGenerator.synthesizeFullAdder();
         formula = 'Sum = A ⊕ B ⊕ Cin  |  Cout = (A • B) + (Cin • (A ⊕ B))';
       } else {
-        synthesized = (AICircuitGenerator as any).synthesizeDynamicCustom(raw);
+        synthesized = AICircuitGenerator.synthesizeDynamicCustom(raw);
         formula = 'Y = A • B';
         adjustment = true;
       }

@@ -55,13 +55,6 @@ export class NetlistEngine {
       }
     }
 
-    // Connect resistors (in digital DC logic, low-value pull-up/pull-down or current limiting resistors pass DC logic)
-    for (const res of circuit.resistors) {
-      if (this.grid.holes.has(res.fromHole) && this.grid.holes.has(res.toHole)) {
-        union(res.fromHole, res.toHole);
-      }
-    }
-
     // Connect closed switches
     for (const sw of circuit.switches) {
       if (sw.isClosed && this.grid.holes.has(sw.holeA) && this.grid.holes.has(sw.holeB)) {
@@ -102,7 +95,6 @@ export class NetlistEngine {
         }
       }
 
-      // Check if this net has shorted VCC and GND directly
       const isShort = hasVCC && hasGND;
       if (isShort) {
         isDeadShort = true;
@@ -137,10 +129,69 @@ export class NetlistEngine {
       }
     }
 
-    // 4. IC Logic Propagation Loop
-    const icPinStates: Record<string, Record<number, LogicLevel>> = {};
+    // 4. Resistor handling: model pull‑up/pull‑down & current-limiting behavior without merging nets.
+    const propagateResistors = (): boolean => {
+      let changed = false;
+      for (const res of circuit.resistors) {
+        if (this.grid.holes.has(res.fromHole) && this.grid.holes.has(res.toHole)) {
+          const netIdFrom = holeNetMap.get(res.fromHole);
+          const netIdTo = holeNetMap.get(res.toHole);
+          const netFrom = netIdFrom ? nets.get(netIdFrom) : undefined;
+          const netTo = netIdTo ? nets.get(netIdTo) : undefined;
+          if (netFrom && netTo) {
+            // If from-side is driven and to-side is floating ('Z'), inject level
+            if ((netFrom.hasVCC || netFrom.level === 1) && netTo.level === 'Z') {
+              netTo.level = 1;
+              changed = true;
+            } else if ((netFrom.hasGND || netFrom.level === 0) && netTo.level === 'Z') {
+              netTo.level = 0;
+              changed = true;
+            } else if ((netTo.hasVCC || netTo.level === 1) && netFrom.level === 'Z') {
+              netFrom.level = 1;
+              changed = true;
+            } else if ((netTo.hasGND || netTo.level === 0) && netFrom.level === 'Z') {
+              netFrom.level = 0;
+              changed = true;
+            }
+          }
+        }
+      }
+      return changed;
+    };
 
-    // Run up to 5 passes for multi-gate propagation / ripple logic
+    // Initial resistor pass before IC evaluation
+    propagateResistors();
+
+    // 5. Compute power rail presence for each IC
+    const icPowered: Record<string, boolean> = {};
+    for (const ic of circuit.placedICs) {
+      const def = IC_REGISTRY[ic.model];
+      if (!def) continue;
+      let hasVCC = false;
+      let hasGND = false;
+      for (const pin of def.pins) {
+        if (pin.type === 'POWER_VCC') {
+          const holeId = ic.pinHoles[pin.pinNumber];
+          if (holeId) {
+            const netId = holeNetMap.get(holeId);
+            const net = netId ? nets.get(netId) : undefined;
+            if (net && net.hasVCC) hasVCC = true;
+          }
+        }
+        if (pin.type === 'POWER_GND') {
+          const holeId = ic.pinHoles[pin.pinNumber];
+          if (holeId) {
+            const netId = holeNetMap.get(holeId);
+            const net = netId ? nets.get(netId) : undefined;
+            if (net && net.hasGND) hasGND = true;
+          }
+        }
+      }
+      icPowered[ic.id] = hasVCC && hasGND;
+    }
+
+    // 6. IC Logic Propagation Loop
+    const icPinStates: Record<string, Record<number, LogicLevel>> = {};
     for (let pass = 0; pass < 5; pass++) {
       let stateChanged = false;
 
@@ -148,11 +199,23 @@ export class NetlistEngine {
         const def = IC_REGISTRY[ic.model];
         if (!def) continue;
 
-        if (!icPinStates[ic.id]) {
-          icPinStates[ic.id] = {};
+        if (!icPowered[ic.id]) {
+          // Unpowered IC: force outputs to high‑impedance
+          for (const pin of def.pins) {
+            if (pin.type === 'OUTPUT') {
+              const holeId = ic.pinHoles[pin.pinNumber];
+              if (holeId) {
+                const netId = holeNetMap.get(holeId);
+                const net = netId ? nets.get(netId) : undefined;
+                if (net) net.level = 'Z';
+              }
+            }
+          }
+          continue;
         }
 
-        // Read input pin levels from nets
+        if (!icPinStates[ic.id]) icPinStates[ic.id] = {};
+
         const inputs: Record<number, LogicLevel> = {};
         for (const pin of def.pins) {
           const holeId = ic.pinHoles[pin.pinNumber];
@@ -166,7 +229,6 @@ export class NetlistEngine {
           }
         }
 
-        // Evaluate logic outputs if IC has an evaluator
         if (def.evaluate) {
           const outputs = def.evaluate(inputs);
           for (const [pinStr, outVal] of Object.entries(outputs)) {
@@ -187,31 +249,33 @@ export class NetlistEngine {
         }
       }
 
+      // Propagate through resistors if IC outputs changed levels
+      if (propagateResistors()) {
+        stateChanged = true;
+      }
+
       if (!stateChanged) break;
     }
 
-    // 5. Evaluate LEDs (Forward-biased: Anode = 1 and Cathode = 0)
+    // 7. Evaluate LEDs (Forward‑biased: Anode = 1 and Cathode = 0)
     const ledStates: Record<string, boolean> = {};
     for (const led of circuit.leds) {
       const anodeNetId = holeNetMap.get(led.anodeHole);
       const cathodeNetId = holeNetMap.get(led.cathodeHole);
-
       const anodeLevel = anodeNetId ? nets.get(anodeNetId)?.level : 'Z';
       const cathodeLevel = cathodeNetId ? nets.get(cathodeNetId)?.level : 'Z';
-
       const isLit = !isDeadShort && anodeLevel === 1 && cathodeLevel === 0;
       ledStates[led.id] = isLit;
       led.isLit = isLit;
     }
 
-    // 6. Evaluate 7-Segment Displays (Common Cathode grounded, segments driven HIGH)
+    // 8. Evaluate 7‑Segment Displays (Common Cathode grounded, segments driven HIGH)
     if (circuit.segmentDisplays) {
       for (const segDisp of circuit.segmentDisplays) {
         const cathodeGrounded = segDisp.commonCathodeHoles.some((hId: string) => {
           const netId = holeNetMap.get(hId);
           return netId ? nets.get(netId)?.level === 0 : false;
         });
-
         const segmentKeys: Array<'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'dp'> = [
           'a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'
         ];

@@ -48,7 +48,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 1: 3-Input Majority Voting Circuit (HIGH when 2 or 3 inputs are HIGH)
-  private static synthesizeMajorityVoter(): Experiment {
+  public static synthesizeMajorityVoter(): Experiment {
     return {
       id: `ai-majority-${Date.now()}`,
       title: '3-Input Majority Voter Circuit',
@@ -244,7 +244,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 2: 2:1 Multiplexer (Data Selector)
-  private static synthesizeMultiplexer(): Experiment {
+  public static synthesizeMultiplexer(): Experiment {
     return {
       id: `ai-mux-${Date.now()}`,
       title: '2:1 Digital Multiplexer (Data Selector)',
@@ -383,7 +383,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 3: 1-Bit Equality Comparator (XNOR)
-  private static synthesizeComparator(): Experiment {
+  public static synthesizeComparator(): Experiment {
     return {
       id: `ai-comp-${Date.now()}`,
       title: '1-Bit Equality Comparator (XNOR Logic)',
@@ -520,7 +520,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 4: Light/Darkness Detector using 555
-  private static synthesizeLightDetector(): Experiment {
+  public static synthesizeLightDetector(): Experiment {
     return {
       id: `ai-darkness-${Date.now()}`,
       title: 'Automatic Darkness Detector with 555 & LED',
@@ -653,7 +653,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 5: XOR gate constructed purely from 7400 NAND gates
-  private static synthesizeXorFromNand(): Experiment {
+  public static synthesizeXorFromNand(): Experiment {
     return {
       id: `ai-xornand-${Date.now()}`,
       title: 'XOR Gate Synthesized from Quad NAND (7400)',
@@ -952,7 +952,7 @@ export class AICircuitGenerator {
   }
 
   // Synthesis 6: SR Latch using NAND gates
-  private static synthesizeSRLatch(): Experiment {
+  public static synthesizeSRLatch(): Experiment {
     return {
       id: `ai-sr-${Date.now()}`,
       title: 'Active-Low SR Latch with Memory State',
@@ -1089,7 +1089,7 @@ export class AICircuitGenerator {
   }
 
   // Fallback Full Adder
-  private static synthesizeFullAdder(): Experiment {
+  public static synthesizeFullAdder(): Experiment {
     return {
       id: `ai-fa-${Date.now()}`,
       title: 'Full Adder (3-Bit Addition with Carry)',
@@ -1226,7 +1226,7 @@ export class AICircuitGenerator {
   }
 
   // Dynamic Custom Circuit Synthesizer
-  private static synthesizeDynamicCustom(prompt: string): Experiment {
+  public static synthesizeDynamicCustom(prompt: string): Experiment {
     const isOr = prompt.toLowerCase().includes('or');
     const isNand = prompt.toLowerCase().includes('nand');
     const model = isOr ? '7432' : isNand ? '7400' : '7408';
