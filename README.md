@@ -33,9 +33,13 @@ With a typical lab ratio of **1 teaching assistant for 40 students**, lab sessio
   * **Decoupled Resistor Modeling**: Treats resistors as impedance-limited level injectors rather than $0\Omega$ short circuits, enabling proper pull-up, pull-down, and current-limiting behavior without false dead-short alarms.
   * **Dead-Short Detection**: Flags immediate visual and audible buzzer alerts if $V_{CC}$ ($+5\text{ V}$) and $GND$ ($0\text{ V}$) are directly bridged.
   * **Diode & Indicator Simulation**: Forward-biased LED illumination ($Anode = 1$, $Cathode = 0$) and 7-segment display decoding.
-* **Dynamic Boolean Expression Compiler**:
-  * Evaluates custom expressions (e.g. `Y = A*B + C'`, `Y = A ^ B + C`) via Lexer/Parser AST decomposition.
-  * Allocates required DIP ICs and generates complete truth tables and step-by-step breadboard assembly routes.
+* **Multi-Output Boolean Expression Compiler**:
+  * Evaluates single and multi-output systems (e.g. `Sum = A ^ B ^ Cin; Cout = (A*B) + Cin*(A ^ B)`, decoders, full adders) via AST decomposition and parallel truth table generation.
+  * Allocates required DIP IC gate slots from real 74xx pin mapping tables and routes separate color-coded indicator LEDs (Green for $Y_1$/Sum, Red for $Y_2$/Cout, Yellow for $Y_3$, Blue for $Y_4$).
+  * Compiles complete step-by-step breadboard assembly routes and synchronized multi-channel IEEE 91-1984 logic schematics.
+* **Purpose-Built Hardware UI (Anti-AI Aesthetics)**:
+  * Restrained, tactile industrial workbench interface built with Bookerly serif typography, JetBrains Mono data readouts, and a dark navy/teal hardware color system.
+  * Replaces generic floating glassmorphism, glowing gradients, and pill badges with solid instrument deck panels, crisp vector schematics, and clean multimeter HUDs.
 * **AI Aim & DRC Evaluator**:
   * Analyzes student objectives against physical constraints and electrical safety standards (e.g., rejecting lethal high-voltage AC mains or impossible multi-GHz architectures).
   * Automatically synthesizes equivalent 5V TTL implementations for verified lab execution.
