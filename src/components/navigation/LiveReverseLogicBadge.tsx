@@ -57,7 +57,7 @@ export const LiveReverseLogicBadge: React.FC = () => {
       {/* Collapsed Pill Button */}
       <div
         onClick={toggleExpand}
-        className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 hover:border-[#C8D9E6]/60 rounded-full px-3 py-1.5 shadow-2xl flex items-center gap-2 cursor-pointer transition active:scale-95 text-[#F5EFEB] group"
+        className="bg-[#1b2735] border border-[#567C8D]/40 hover:border-[#C8D9E6]/60 rounded-g2-sm px-3 py-1.5 shadow-md flex items-center gap-2 cursor-pointer transition active:scale-95 text-[#F5EFEB] group"
         title="Click to view reverse-engineered Boolean logic & breadboard diagnostics"
       >
         {/* Pulsing Status Dot */}
@@ -81,13 +81,11 @@ export const LiveReverseLogicBadge: React.FC = () => {
 
       {/* Expanded Details Popover */}
       {isExpanded && (
-        <div className="mt-2 w-80 sm:w-96 bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl p-4 shadow-2xl flex flex-col gap-3 text-[#F5EFEB] animate-in fade-in slide-in-from-top-2">
+        <div className="mt-2 w-80 sm:w-96 bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl p-4 shadow-lg flex flex-col gap-3 text-[#F5EFEB]">
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-[#567C8D]/25">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40">
-                <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
-              </div>
+              <Sparkles className="w-4 h-4 text-[#C8D9E6]" />
               <div>
                 <h4 className="text-xs font-bold text-white tracking-tight font-serif">
                   Reverse Netlist Extractor
@@ -107,7 +105,7 @@ export const LiveReverseLogicBadge: React.FC = () => {
           </div>
 
           {/* Detected Formula Card */}
-          <div className="bg-[#131d27]/90 border border-[#567C8D]/40 rounded-g2 p-3 flex flex-col gap-1.5 shadow-inner">
+          <div className="bg-[#131d27]/90 border border-[#567C8D]/40 rounded-g2-sm p-3 flex flex-col gap-1.5">
             <div className="text-[10px] uppercase font-bold tracking-wider text-[#C8D9E6]/70 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Zap className="w-3 h-3 text-[#C8D9E6]" />
@@ -126,9 +124,9 @@ export const LiveReverseLogicBadge: React.FC = () => {
             {isComplete && (
               <button
                 onClick={handleSyncToDesmos}
-                className="mt-1.5 w-full py-1.5 px-3 rounded-full bg-[#C8D9E6] text-[#131d27] hover:bg-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
+                className="mt-1.5 w-full py-1.5 px-3 rounded-g2-sm bg-[#C8D9E6] text-[#131d27] hover:bg-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow transition active:scale-95 cursor-pointer"
               >
-                <span>Sync with Desmos Header Bar</span>
+                <span>Sync with Formula Bar</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}

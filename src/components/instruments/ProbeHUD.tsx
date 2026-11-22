@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
-import { Gauge, Sparkles, X } from 'lucide-react';
+import { Gauge, X } from 'lucide-react';
 
 export const ProbeHUD: React.FC = () => {
   const { isProbeMode, probedNet, toggleProbeMode, probeHole } = useCircuitStore();
@@ -8,19 +8,17 @@ export const ProbeHUD: React.FC = () => {
   if (!isProbeMode) return null;
 
   return (
-    <div className="absolute top-48 left-4 right-4 z-20 pointer-events-auto flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-2">
+    <div className="absolute top-48 left-4 right-4 z-20 pointer-events-auto flex flex-col items-start gap-2">
       {probedNet ? (
-        <div className="w-full max-w-md bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl p-4 shadow-2xl flex flex-col gap-3 text-[#F5EFEB]">
+        <div className="w-full max-w-md bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl p-4 shadow-md flex flex-col gap-3 text-[#F5EFEB]">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#567C8D]/25 pb-2.5">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#2F4156] border border-[#567C8D]/40 flex items-center justify-center text-[#C8D9E6]">
-                <Gauge className="w-4 h-4" />
-              </div>
+              <Gauge className="w-4 h-4 text-[#C8D9E6]" />
               <div>
                 <div className="text-xs font-semibold text-white tracking-tight flex items-center gap-1.5 font-serif">
                   <span>Hole {probedNet.holeId.toUpperCase()}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F4156] text-[#C8D9E6] font-mono border border-[#567C8D]/40">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#2F4156] text-[#C8D9E6] font-mono border border-[#567C8D]/40">
                     {probedNet.section.replace(/_/g, ' ')}
                   </span>
                 </div>
@@ -49,7 +47,7 @@ export const ProbeHUD: React.FC = () => {
 
             <div className="flex flex-col items-end">
               <span
-                className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold tracking-wide uppercase ${
+                className={`px-2.5 py-1 rounded-g2-sm text-[11px] font-mono font-semibold tracking-wide uppercase ${
                   probedNet.isShort
                     ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                     : probedNet.logicLevel === 1
@@ -80,7 +78,7 @@ export const ProbeHUD: React.FC = () => {
                 {probedNet.connectedComponents.map((comp, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-0.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[11px] text-[#C8D9E6] font-mono"
+                    className="px-2 py-0.5 rounded bg-[#2F4156] border border-[#567C8D]/40 text-[11px] text-[#C8D9E6] font-mono"
                   >
                     {comp}
                   </span>
@@ -95,8 +93,8 @@ export const ProbeHUD: React.FC = () => {
         </div>
       ) : (
         /* Hint pill when in probe mode */
-        <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 px-4 py-2 rounded-full shadow-2xl flex items-center gap-2.5 text-xs text-[#F5EFEB]">
-          <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6] animate-pulse" />
+        <div className="bg-[#1b2735] border border-[#567C8D]/40 px-3.5 py-2 rounded-g2-sm shadow-md flex items-center gap-2.5 text-xs text-[#F5EFEB]">
+          <Gauge className="w-3.5 h-3.5 text-[#C8D9E6]" />
           <span className="font-serif">Tap any breadboard hole to probe voltage and trace its electrical net.</span>
           <button
             onClick={toggleProbeMode}

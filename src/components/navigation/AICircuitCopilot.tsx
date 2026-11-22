@@ -11,7 +11,6 @@ import {
   Layers,
   ListOrdered,
   RefreshCw,
-  Sparkles,
   Wand2,
   X,
   Zap,
@@ -70,19 +69,17 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#131d27]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden text-[#F5EFEB] animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 bg-[#131d27]/90 flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden text-[#F5EFEB]">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-[#567C8D]/25 flex items-center justify-between shrink-0 bg-[#131d27]/60">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40 shadow-inner">
-              <Zap className="w-5 h-5 text-[#C8D9E6]" />
-            </div>
+            <Zap className="w-5 h-5 text-[#C8D9E6]" />
             <div>
               <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight flex items-center gap-2 font-serif">
-                <span>AI Aim & Feasibility Evaluator</span>
+                <span>AI Aim &amp; Feasibility Evaluator</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F4156] text-[#C8D9E6] font-mono font-medium border border-[#567C8D]/40">
-                  TI TTL & 830-Tie DRC
+                  TI TTL &amp; 830-Tie DRC
                 </span>
               </h3>
               <p className="text-[11px] sm:text-xs text-[#C8D9E6]/80 font-serif">
@@ -117,7 +114,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                 onChange={(e) => setAimInput(e.target.value)}
                 placeholder="e.g. Type custom Boolean equation 'Y = A*B + C'' or lab aim 'To construct a 2:1 multiplexer using 7404 and 7408 ICs'..."
                 rows={2}
-                className="w-full bg-[#131d27]/75 border border-[#567C8D]/40 rounded-g2 p-3 text-xs sm:text-sm text-[#F5EFEB] placeholder:text-[#C8D9E6]/40 focus:outline-none focus:border-[#C8D9E6] resize-none font-serif leading-relaxed"
+                className="w-full bg-[#131d27]/75 border border-[#567C8D]/40 rounded-g2-sm p-3 text-xs sm:text-sm text-[#F5EFEB] placeholder:text-[#C8D9E6]/40 focus:outline-none focus:border-[#C8D9E6] resize-none font-serif leading-relaxed"
               />
             </div>
           </div>
@@ -127,19 +124,19 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
             <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]/80">
               Sample Lab Aims (Click to test)
             </span>
-            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+            <div className="flex flex-col max-h-40 overflow-y-auto">
               {quickAims.map((item, idx) => (
-                <button
+                <div
                   key={idx}
                   onClick={() => {
                     setAimInput(item.query);
                     handleEvaluate(item.query);
                   }}
-                  className="px-2.5 py-1 rounded-full bg-[#2F4156]/90 hover:bg-[#3e546e] text-[11px] text-[#C8D9E6] border border-[#567C8D]/35 font-serif transition flex items-center gap-1.5 hover:text-white"
+                  className="flex items-center justify-between py-1.5 border-b border-[#2F4156] text-xs cursor-pointer text-[#C8D9E6] hover:text-white font-serif transition"
                 >
-                  <Sparkles className="w-3 h-3 text-[#C8D9E6]" />
                   <span>{item.label}</span>
-                </button>
+                  <ArrowRight className="w-3 h-3 shrink-0 text-[#567C8D]" />
+                </div>
               ))}
             </div>
           </div>
@@ -154,7 +151,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
             <button
               onClick={() => handleEvaluate()}
               disabled={isEvaluating || !aimInput.trim()}
-              className="px-4 py-2 bg-[#C8D9E6] text-[#131d27] hover:bg-white disabled:opacity-40 rounded-full text-xs font-semibold flex items-center gap-2 shadow-lg transition active:scale-95"
+              className="px-4 py-2 bg-[#C8D9E6] text-[#131d27] hover:bg-white disabled:opacity-40 rounded-g2-sm text-xs font-semibold flex items-center gap-2 shadow-md transition active:scale-95"
             >
               {isEvaluating ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -167,10 +164,10 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
           {/* EVALUATION RESULT DISPLAY */}
           {evaluation && (
-            <div className="mt-2 flex flex-col gap-3.5 border-t border-[#567C8D]/30 pt-4 animate-in fade-in slide-in-from-bottom-2">
+            <div className="mt-2 flex flex-col gap-3.5 border-t border-[#567C8D]/30 pt-4">
               {/* Verdict Header Card */}
               <div
-                className={`p-3.5 rounded-g2 border flex items-start justify-between gap-3 ${
+                className={`p-3.5 rounded-g2-sm border flex items-start justify-between gap-3 ${
                   evaluation.verdict === 'ACCEPTED'
                     ? 'bg-[#131d27]/90 border-[#567C8D] text-white'
                     : evaluation.verdict === 'ACCEPTED_WITH_ADJUSTMENTS'
@@ -209,7 +206,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
                 {/* Total Steps Count Badge */}
                 {evaluation.isAcceptable && (
-                  <div className="bg-[#2F4156] border border-[#567C8D]/40 rounded-g2 px-3 py-1.5 flex flex-col items-center shrink-0">
+                  <div className="bg-[#2F4156] border border-[#567C8D]/40 rounded-g2-sm px-3 py-1.5 flex flex-col items-center shrink-0">
                     <span className="text-[9px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
                       Construction
                     </span>
@@ -222,9 +219,9 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
 
               {/* If Unfeasible: Suggestion Box */}
               {!evaluation.isAcceptable && evaluation.suggestedAlternative && (
-                <div className="bg-[#131d27]/70 border border-[#567C8D]/40 p-3 rounded-g2 flex flex-col gap-2">
+                <div className="bg-[#131d27]/70 border border-[#567C8D]/40 p-3 rounded-g2-sm flex flex-col gap-2">
                   <div className="text-[11px] font-semibold text-[#C8D9E6] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
+                    <ArrowRight className="w-3.5 h-3.5 text-[#C8D9E6]" />
                     <span>Recommended Feasible Alternative:</span>
                   </div>
                   <p className="text-xs text-[#F5EFEB] font-serif leading-relaxed">
@@ -236,7 +233,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                       setAimInput(alt);
                       handleEvaluate(alt);
                     }}
-                    className="self-start text-[11px] font-medium text-[#131d27] bg-[#C8D9E6] hover:bg-white px-3 py-1 rounded-full transition flex items-center gap-1"
+                    className="self-start text-[11px] font-medium text-[#131d27] bg-[#C8D9E6] hover:bg-white px-3 py-1 rounded-g2-sm transition flex items-center gap-1"
                   >
                     <span>Load Recommended Alternative</span>
                     <ArrowRight className="w-3 h-3" />
@@ -250,18 +247,18 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                   {/* Canonical Boolean Equation & Apparatus */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {/* Boolean Formula */}
-                    <div className="bg-[#131d27]/70 border border-[#567C8D]/35 rounded-g2 p-3 flex flex-col gap-1">
+                    <div className="bg-[#131d27]/70 border border-[#567C8D]/35 rounded-g2-sm p-3 flex flex-col gap-1">
                       <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] flex items-center gap-1.5">
                         <Zap className="w-3 h-3 text-[#C8D9E6]" />
                         <span>Boolean Logic Formula</span>
                       </span>
-                      <div className="text-xs font-mono font-semibold text-white bg-[#1b2735] px-2 py-1 rounded border border-[#567C8D]/30 mt-0.5">
+                      <code className="text-xs font-mono font-semibold text-white bg-[#1b2735] px-2 py-1 rounded border border-[#567C8D]/30 mt-0.5 block">
                         {evaluation.booleanFormula}
-                      </div>
+                      </code>
                     </div>
 
                     {/* Apparatus Summary */}
-                    <div className="bg-[#131d27]/70 border border-[#567C8D]/35 rounded-g2 p-3 flex flex-col gap-1">
+                    <div className="bg-[#131d27]/70 border border-[#567C8D]/35 rounded-g2-sm p-3 flex flex-col gap-1">
                       <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] flex items-center gap-1.5">
                         <Boxes className="w-3 h-3 text-[#C8D9E6]" />
                         <span>Hardware Kit Required</span>
@@ -273,7 +270,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                   </div>
 
                   {/* Step-by-Step Construction Roadmap Overview */}
-                  <div className="bg-[#131d27]/60 border border-[#567C8D]/35 rounded-g2 p-3 flex flex-col gap-2">
+                  <div className="bg-[#131d27]/60 border border-[#567C8D]/35 rounded-g2-sm p-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] flex items-center gap-1.5">
                         <ListOrdered className="w-3.5 h-3.5 text-[#C8D9E6]" />
@@ -288,7 +285,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                       {evaluation.stepRoadmap.map((st) => (
                         <div
                           key={st.stepNumber}
-                          className="flex items-center justify-between text-xs bg-[#1b2735]/80 px-2.5 py-1.5 rounded border border-[#567C8D]/20 font-serif"
+                          className="flex items-center justify-between text-xs bg-[#1b2735]/80 px-2.5 py-1.5 rounded-g2-sm border border-[#567C8D]/20 font-serif"
                         >
                           <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-[#2F4156] text-[#C8D9E6] font-mono font-bold text-[10px] flex items-center justify-center shrink-0">
@@ -311,7 +308,7 @@ export const AICircuitCopilot: React.FC<AICircuitCopilotProps> = ({ isOpen, onCl
                     </span>
                     <button
                       onClick={handleStartConstruction}
-                      className="px-5 py-2.5 bg-[#C8D9E6] hover:bg-white text-[#131d27] rounded-full text-xs font-bold flex items-center gap-2 shadow-lg transition active:scale-95"
+                      className="px-5 py-2.5 bg-[#C8D9E6] hover:bg-white text-[#131d27] rounded-g2-sm text-xs font-bold flex items-center gap-2 shadow-md transition active:scale-95"
                     >
                       <Layers className="w-4 h-4" />
                       <span>Start Guided Construction ({evaluation.totalStepsCount} Steps)</span>

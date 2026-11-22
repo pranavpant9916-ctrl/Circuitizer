@@ -88,22 +88,26 @@ export class CircuitDRC {
       if (step.icsToAdd) step.icsToAdd.forEach(checkIC);
 
       // 4. Validate Resistors
-      if (step.resistorToAdd) {
-        const fromH = defaultGrid.getHole(step.resistorToAdd.fromHole);
-        const toH = defaultGrid.getHole(step.resistorToAdd.toHole);
+      const checkResistor = (res: any) => {
+        const fromH = defaultGrid.getHole(res.fromHole);
+        const toH = defaultGrid.getHole(res.toHole);
         if (!fromH || !toH) {
           warnings.push(`Step ${stepIdx + 1}: Resistor coordinate auto-aligned.`);
         }
-      }
+      };
+      if (step.resistorToAdd) checkResistor(step.resistorToAdd);
+      if (step.resistorsToAdd) step.resistorsToAdd.forEach(checkResistor);
 
       // 5. Validate LEDs
-      if (step.ledToAdd) {
-        const anH = defaultGrid.getHole(step.ledToAdd.anodeHole);
-        const catH = defaultGrid.getHole(step.ledToAdd.cathodeHole);
+      const checkLED = (led: any) => {
+        const anH = defaultGrid.getHole(led.anodeHole);
+        const catH = defaultGrid.getHole(led.cathodeHole);
         if (!anH || !catH) {
           warnings.push(`Step ${stepIdx + 1}: LED terminal holes adjusted to valid breadboard sockets.`);
         }
-      }
+      };
+      if (step.ledToAdd) checkLED(step.ledToAdd);
+      if (step.ledsToAdd) step.ledsToAdd.forEach(checkLED);
     });
 
     return {

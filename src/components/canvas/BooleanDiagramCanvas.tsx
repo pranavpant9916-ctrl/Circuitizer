@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { LogicLevel } from '../../types/circuit';
 import { BooleanCompiler, CompiledGateOp } from '../../engine/booleanCompiler';
-import { Info, Sparkles, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
+import { Info, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 
 interface GatePort {
   sourceId: string;
@@ -178,13 +178,19 @@ export const BooleanDiagramCanvas: React.FC = () => {
     }
 
     try {
-      const parsed = BooleanCompiler.parseExpression(candidateFormula);
-      const ops = BooleanCompiler.linearizeGates(parsed.ast);
+      const multi = BooleanCompiler.parseMultiExpression(candidateFormula);
+      const ops: CompiledGateOp[] = [];
+      let counter = 1;
+      multi.outputs.forEach((out, idx) => {
+        const linearized = BooleanCompiler.linearizeGates(out.ast, counter, `g${idx + 1}`);
+        counter = linearized.nextCounter;
+        ops.push(...linearized.ops);
+      });
 
       if (ops.length > 0) {
         // Read input switch levels from current digital twin state
         const env: Record<string, 0 | 1> = {};
-        parsed.variables.forEach((v) => {
+        multi.allVariables.forEach((v) => {
           const sw = circuitState.switches.find(
             (s) => s.id === `sw-${v.toLowerCase()}` || s.label.toUpperCase().includes(v.toUpperCase())
           );
@@ -315,11 +321,11 @@ export const BooleanDiagramCanvas: React.FC = () => {
         }
 
         // Map primary input switch Y positions on the left panel
-        const numSwitches = parsed.variables.length || 1;
+        const numSwitches = multi.allVariables.length || 1;
         const swSpacing = 44;
         const swStartY = centerY - ((numSwitches - 1) * swSpacing) / 2;
         const switchYMap: Record<string, number> = {};
-        parsed.variables.forEach((v, idx) => {
+        multi.allVariables.forEach((v, idx) => {
           switchYMap[v] = swStartY + idx * swSpacing;
         });
 
@@ -360,27 +366,36 @@ export const BooleanDiagramCanvas: React.FC = () => {
           });
         });
 
-        // 2. Connect the final output gate into the Circuit Output LED indicator
-        const terminalGate =
-          gateNodes.find(
-            (g) => !gateNodes.some((other) => other.inputs.some((inp) => inp.sourceId === g.id))
-          ) || gateNodes[gateNodes.length - 1];
+        // 2. Connect the output gates into the Circuit Output LED indicator(s)
+        const outputBusX = width - 170; // Left edge of Circuit Output HUD panel
+        const numOutputs = multi.outputs.length;
+        const outSpacing = Math.min(60, (height - 200) / Math.max(numOutputs, 1));
+        const outStartY = centerY - ((numOutputs - 1) * outSpacing) / 2;
 
-        if (terminalGate) {
-          const outputBusX = width - 170; // Left edge of Circuit Output HUD panel
-          wires.push({
-            id: `wire-final-to-output`,
-            fromX: terminalGate.output.portX,
-            fromY: terminalGate.output.portY,
-            toX: outputBusX,
-            toY: centerY,
-            level: terminalGate.output.level,
-            label: parsed.formula,
-          });
-        }
+        multi.outputs.forEach((out, oIdx) => {
+          const outPrefix = `g${oIdx + 1}_`;
+          const outGates = gateNodes.filter((g) => g.id.startsWith(outPrefix));
+          const termGate =
+            outGates.find((g) => !outGates.some((other) => other.inputs.some((inp) => inp.sourceId === g.id))) ||
+            outGates[outGates.length - 1] ||
+            gateNodes[gateNodes.length - 1];
+
+          if (termGate) {
+            const outY = outStartY + oIdx * outSpacing;
+            wires.push({
+              id: `wire-final-to-output-${oIdx}`,
+              fromX: termGate.output.portX,
+              fromY: termGate.output.portY,
+              toX: outputBusX,
+              toY: outY,
+              level: termGate.output.level,
+              label: out.normalizedExpr,
+            });
+          }
+        });
 
         return {
-          formula: parsed.formula,
+          formula: multi.combinedFormula,
           title,
           gates: gateNodes,
           wires,
@@ -624,11 +639,9 @@ export const BooleanDiagramCanvas: React.FC = () => {
   return (
     <div className="relative w-full h-full bg-[#131d27] flex flex-col justify-between overflow-hidden touch-none select-none">
       {/* Top Schematic Information Header */}
-      <div className="p-4 bg-[#1b2735]/90 backdrop-blur-xl border-b border-[#567C8D]/35 flex items-center justify-between z-10 text-[#F5EFEB]">
+      <div className="p-4 bg-[#1b2735] border-b border-[#567C8D]/35 flex items-center justify-between z-10 text-[#F5EFEB]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#2F4156] border border-[#567C8D]/40 flex items-center justify-center text-[#C8D9E6]">
-            <Zap className="w-4 h-4" />
-          </div>
+          <Zap className="w-5 h-5 text-[#C8D9E6] shrink-0" />
           <div>
             <div className="text-[10px] uppercase font-sans font-semibold tracking-wider text-[#C8D9E6]">
               Boolean Logic Diagram (IEEE 91-1984)
@@ -640,8 +653,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
         </div>
 
         {/* Canonical Boolean Algebra Expression Badge */}
-        <div className="bg-[#131d27]/80 px-4 py-1.5 rounded-full border border-[#567C8D]/40 text-xs font-mono font-semibold text-[#C8D9E6] shadow-sm flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
+        <div className="bg-[#131d27] px-3.5 py-1.5 rounded-g2-sm border border-[#567C8D]/40 text-xs font-mono font-semibold text-[#C8D9E6] shadow-sm flex items-center gap-2">
           <span>{formula}</span>
         </div>
       </div>
@@ -656,7 +668,7 @@ export const BooleanDiagramCanvas: React.FC = () => {
         />
 
         {/* Floating Input Switch Controllers (Left Side) */}
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 p-3 rounded-g2 shadow-2xl z-20">
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 bg-[#1b2735] border border-[#567C8D]/40 p-3 rounded-g2 shadow-md z-20">
           <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] px-1">
             Logic Inputs
           </div>
@@ -664,9 +676,9 @@ export const BooleanDiagramCanvas: React.FC = () => {
             <button
               key={sw.id}
               onClick={() => toggleSwitch(sw.id)}
-              className={`flex items-center justify-between gap-3 px-3 py-1.5 rounded-full text-xs font-mono font-semibold border transition ${
+              className={`flex items-center justify-between gap-3 px-3 py-1.5 rounded-g2-sm text-xs font-mono font-semibold border transition ${
                 sw.isClosed
-                  ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6] shadow-md'
+                  ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6] shadow-sm'
                   : 'bg-[#2F4156] text-[#C8D9E6] border-[#567C8D]/40 hover:bg-[#3e546e]'
               }`}
             >
@@ -680,36 +692,68 @@ export const BooleanDiagramCanvas: React.FC = () => {
         </div>
 
         {/* Output Lamp / LED Status (Right Side) */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 p-4 rounded-g2-xl shadow-2xl z-20">
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 bg-[#1b2735] border border-[#567C8D]/40 p-4 rounded-g2-xl shadow-md z-20">
           <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]">
             Circuit Output
           </div>
-          <div className="relative flex items-center justify-center my-1">
-            <div
-              className={`w-8 h-8 rounded-full transition-all duration-300 ${
-                isAnyLedLit
-                  ? 'bg-white shadow-[0_0_24px_rgba(255,255,255,1)] ring-4 ring-[#C8D9E6]/60'
-                  : 'bg-[#2F4156] border border-[#567C8D]/40'
-              }`}
-            />
-            {isAnyLedLit && (
-              <div className="absolute w-3 h-3 rounded-full bg-white blur-[1px]" />
-            )}
-          </div>
-          <span
-            className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold tracking-wide uppercase ${
-              isAnyLedLit
-                ? 'bg-[#C8D9E6] text-[#131d27]'
-                : 'bg-[#131d27] text-[#C8D9E6]/60 border border-[#567C8D]/30'
-            }`}
-          >
-            {isAnyLedLit ? 'HIGH (1)' : 'LOW (0)'}
-          </span>
+          {circuitState.leds.length > 1 ? (
+            <div className="flex flex-col gap-2 my-1">
+              {circuitState.leds.map((led, lIdx) => {
+                const colorHex =
+                  led.color === 'red' ? '#ef4444' :
+                  led.color === 'green' ? '#10b981' :
+                  led.color === 'yellow' ? '#eab308' :
+                  led.color === 'blue' ? '#3b82f6' : '#ffffff';
+                const label = lIdx === 0 ? 'SUM / Y1' : lIdx === 1 ? 'COUT / Y2' : `OUT ${lIdx + 1}`;
+                return (
+                  <div key={led.id} className="flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-g2-sm bg-[#131d27] border border-[#567C8D]/30 min-w-[125px]">
+                    <span className="text-[11px] font-mono font-bold text-[#C8D9E6]">{label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono font-semibold" style={{ color: led.isLit ? colorHex : '#567C8D' }}>
+                        {led.isLit ? '1' : '0'}
+                      </span>
+                      <div
+                        className="w-3.5 h-3.5 rounded-full transition-all"
+                        style={{
+                          backgroundColor: led.isLit ? colorHex : '#2F4156',
+                          boxShadow: led.isLit ? `0 0 10px ${colorHex}` : 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              <div className="relative flex items-center justify-center my-1">
+                <div
+                  className={`w-8 h-8 rounded-full transition-all duration-300 ${
+                    isAnyLedLit
+                      ? 'bg-white shadow-[0_0_24px_rgba(255,255,255,1)] ring-4 ring-[#C8D9E6]/60'
+                      : 'bg-[#2F4156] border border-[#567C8D]/40'
+                  }`}
+                />
+                {isAnyLedLit && (
+                  <div className="absolute w-3 h-3 rounded-full bg-white blur-[1px]" />
+                )}
+              </div>
+              <span
+                className={`px-3 py-1 rounded-g2-sm text-[11px] font-mono font-bold tracking-wide uppercase ${
+                  isAnyLedLit
+                    ? 'bg-[#C8D9E6] text-[#131d27]'
+                    : 'bg-[#131d27] text-[#C8D9E6]/60 border border-[#567C8D]/30'
+                }`}
+              >
+                {isAnyLedLit ? 'HIGH (1)' : 'LOW (0)'}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Bottom Hint Strip */}
-      <div className="p-2.5 bg-[#1b2735]/80 backdrop-blur-md border-t border-[#567C8D]/30 flex items-center justify-between text-xs text-[#C8D9E6]/80 px-6 font-serif z-10">
+      <div className="p-2.5 bg-[#1b2735] border-t border-[#567C8D]/30 flex items-center justify-between text-xs text-[#C8D9E6]/80 px-6 font-serif z-10">
         <div className="flex items-center gap-2">
           <Info className="w-3.5 h-3.5 text-[#C8D9E6]" />
           <span>Click any input switch on the left to watch signals propagate through the logic gates.</span>

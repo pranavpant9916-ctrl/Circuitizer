@@ -109,9 +109,9 @@ export const LogicAnalyzerDock: React.FC = () => {
 
   return (
     <div className="absolute left-4 right-4 bottom-32 z-20 pointer-events-auto">
-      <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl shadow-2xl overflow-hidden text-[#F5EFEB]">
+      <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl shadow-md overflow-hidden text-[#F5EFEB]">
         {/* Dock Header */}
-        <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[#567C8D]/30 bg-[#131d27]/70">
+        <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[#567C8D]/30 bg-[#131d27]">
           <div className="flex items-center gap-2">
             <Activity className="w-3.5 h-3.5 text-[#C8D9E6]" />
             <span className="text-xs font-semibold text-white tracking-tight font-serif">
@@ -123,7 +123,7 @@ export const LogicAnalyzerDock: React.FC = () => {
             {/* Play/Pause */}
             <button
               onClick={toggleSimulation}
-              className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 transition ${
+              className={`px-3 py-1 rounded-g2-sm text-xs font-medium flex items-center gap-1.5 transition ${
                 isSimRunning
                   ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
                   : 'bg-[#2F4156] text-[#C8D9E6] hover:bg-[#3e546e] border border-[#567C8D]/40'
@@ -166,7 +166,7 @@ export const LogicAnalyzerDock: React.FC = () => {
         {!isMinimized && (
           <div className="p-3 flex flex-col gap-2.5">
             {/* Waveform Canvas */}
-            <div className="w-full h-24 bg-[#131d27] rounded-g2 overflow-hidden border border-[#567C8D]/30">
+            <div className="w-full h-24 bg-[#131d27] rounded-g2-sm overflow-hidden border border-[#567C8D]/30">
               <canvas
                 ref={canvasRef}
                 width={360}
@@ -185,7 +185,7 @@ export const LogicAnalyzerDock: React.FC = () => {
                   <button
                     key={sw.id}
                     onClick={() => toggleSwitch(sw.id)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border transition ${
+                    className={`px-2.5 py-1 rounded-g2-sm text-xs font-medium flex items-center gap-1.5 border transition ${
                       sw.isClosed
                         ? 'bg-[#C8D9E6] text-[#131d27] font-semibold border-[#C8D9E6]'
                         : 'bg-[#2F4156] border-[#567C8D]/40 text-[#C8D9E6] hover:bg-[#3e546e]'
@@ -205,7 +205,7 @@ export const LogicAnalyzerDock: React.FC = () => {
               <select
                 value={clockHz}
                 onChange={(e) => setClockHz(Number(e.target.value))}
-                className="bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] text-xs rounded-full px-2.5 py-1 focus:outline-none focus:border-[#C8D9E6] font-mono"
+                className="bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] text-xs rounded-g2-sm px-2.5 py-1 focus:outline-none focus:border-[#C8D9E6] font-mono"
               >
                 <option value={0.5} className="bg-[#1b2735] text-white">0.5 Hz</option>
                 <option value={1} className="bg-[#1b2735] text-white">1.0 Hz</option>

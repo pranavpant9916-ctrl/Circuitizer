@@ -3,11 +3,11 @@ import { useCircuitStore } from '../../store/useCircuitStore';
 import { BooleanCompiler } from '../../engine/booleanCompiler';
 import { AudioEngine } from '../../engine/audioEngine';
 import {
+  Check,
   ChevronDown,
   ChevronUp,
   FunctionSquare,
   Play,
-  Sparkles,
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react';
@@ -115,7 +115,6 @@ export const DesmosExpressionBar: React.FC = () => {
       try {
         const result = BooleanCompiler.compile(formulaInput);
         loadSynthesizedExperiment(result.experiment);
-        // Automatically jump to final step so student immediately sees the full circuit working
         jumpToStep(result.experiment.steps.length - 1);
 
         setCompileSuccess(
@@ -132,16 +131,16 @@ export const DesmosExpressionBar: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 rounded-g2-xl shadow-2xl p-3 flex flex-col gap-2.5 transition-all duration-200 text-[#F5EFEB]">
+    <div className="w-full bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl shadow-md p-3 flex flex-col gap-2.5 transition-all duration-200 text-[#F5EFEB]">
       {/* Top Bar: Function Badge, Expression Input, and Quick Actions */}
       <form onSubmit={handleCompile} className="flex items-center gap-2.5">
         {/* Function Icon Pill */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] font-mono text-xs font-bold shrink-0 shadow-inner">
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-g2-sm bg-[#2F4156] border border-[#567C8D]/40 text-[#C8D9E6] font-mono text-xs font-bold shrink-0">
           <FunctionSquare className="w-4 h-4 text-[#C8D9E6]" />
           <span className="hidden sm:inline">ƒ(Logic)</span>
         </div>
 
-        {/* The Desmos-Style Live Formula Input Field */}
+        {/* Live Formula Input Field */}
         <div className="relative flex-1">
           <input
             ref={inputRef}
@@ -153,15 +152,15 @@ export const DesmosExpressionBar: React.FC = () => {
               setCompileSuccess(null);
             }}
             placeholder="Type Boolean equation: e.g. Y = A*B + C', Y = (A + B)(C + D), Y = A ⊕ B..."
-            className="w-full bg-[#131d27]/85 border border-[#567C8D]/40 rounded-full px-4 py-1.5 text-xs sm:text-sm font-mono text-white placeholder:text-[#C8D9E6]/40 focus:outline-none focus:border-[#C8D9E6] focus:ring-1 focus:ring-[#C8D9E6] shadow-inner transition"
+            className="w-full bg-[#131d27] border border-[#567C8D]/40 rounded-g2-sm px-3.5 py-1.5 text-xs sm:text-sm font-mono text-white placeholder:text-[#C8D9E6]/40 focus:outline-none focus:border-[#C8D9E6] focus:ring-1 focus:ring-[#C8D9E6] transition"
           />
         </div>
 
-        {/* Compile / Enter Button */}
+        {/* Compile Button */}
         <button
           type="submit"
           disabled={isCompiling || !formulaInput.trim()}
-          className="px-3.5 py-1.5 rounded-full bg-[#C8D9E6] text-[#131d27] hover:bg-white disabled:opacity-40 text-xs font-semibold flex items-center gap-1.5 shadow-md transition active:scale-95 shrink-0 cursor-pointer"
+          className="px-3.5 py-1.5 rounded-g2-sm bg-[#C8D9E6] text-[#131d27] hover:bg-white disabled:opacity-40 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0 cursor-pointer"
           title="Compile equation into physical breadboard layout (Press Enter)"
         >
           <Play className="w-3.5 h-3.5 fill-[#131d27]" />
@@ -181,10 +180,10 @@ export const DesmosExpressionBar: React.FC = () => {
 
       {/* Expanded Controls: Variable Sliders, Quick Operators, and Live LED Output */}
       {isExpanded && (
-        <div className="flex flex-col gap-2.5 pt-1 border-t border-[#567C8D]/25 animate-in fade-in slide-in-from-top-1">
+        <div className="flex flex-col gap-2.5 pt-1 border-t border-[#567C8D]/25">
           {/* Middle Row: Variable Sliders / Switches and Live Output Status */}
           <div className="flex items-center justify-between flex-wrap gap-2.5">
-            {/* Variable Slider / Toggle Pills */}
+            {/* Variable Switches */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]/70 flex items-center gap-1">
                 <span>Variables:</span>
@@ -200,10 +199,10 @@ export const DesmosExpressionBar: React.FC = () => {
                     key={v}
                     type="button"
                     onClick={() => toggleSwitch(switchId)}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold transition border cursor-pointer ${
+                    className={`flex items-center gap-2 px-3 py-1 rounded-g2-sm text-xs font-mono font-bold transition border cursor-pointer ${
                       isHigh
-                        ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6] shadow-[0_0_10px_rgba(200,217,230,0.5)]'
-                        : 'bg-[#131d27]/70 text-[#C8D9E6] border-[#567C8D]/40 hover:bg-[#2F4156]'
+                        ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6]'
+                        : 'bg-[#131d27] text-[#C8D9E6] border-[#567C8D]/40 hover:bg-[#2F4156]'
                     }`}
                     title={`Click to flip variable ${v} (0V ↔ +5V)`}
                   >
@@ -224,13 +223,12 @@ export const DesmosExpressionBar: React.FC = () => {
             </div>
 
             {/* Live Circuit Output Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#131d27]/80 border border-[#567C8D]/40 shrink-0">
-              {/* Glowing Simulated LED Bulb */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-g2-sm bg-[#131d27] border border-[#567C8D]/40 shrink-0">
               <div className="relative flex items-center justify-center">
                 <div
-                  className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
                     isAnyLedLit
-                      ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,1)] ring-2 ring-white/50'
+                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)]'
                       : 'bg-[#2F4156] border border-[#567C8D]/40'
                   }`}
                 />
@@ -241,7 +239,7 @@ export const DesmosExpressionBar: React.FC = () => {
               </span>
 
               <span
-                className={`text-[9px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                className={`text-[9px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                   isAnyLedLit
                     ? 'bg-[#C8D9E6] text-[#131d27]'
                     : 'bg-[#2F4156] text-[#C8D9E6]/70'
@@ -285,7 +283,7 @@ export const DesmosExpressionBar: React.FC = () => {
             )}
             {compileSuccess && !compilerError && (
               <span className="text-[11px] text-[#C8D9E6] font-serif flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#C8D9E6]" />
+                <Check className="w-3 h-3 text-[#C8D9E6]" />
                 <span>{compileSuccess}</span>
               </span>
             )}

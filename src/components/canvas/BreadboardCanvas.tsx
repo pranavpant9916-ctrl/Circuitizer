@@ -446,11 +446,24 @@ export const BreadboardCanvas: React.FC = () => {
           const ledX = (hAnode.x + hCathode.x) / 2;
           const ledY = (hAnode.y + hCathode.y) / 2;
 
+          const ledColor = led.color || 'green';
+          const glowGradColor =
+            ledColor === 'red' ? 'rgba(239, 68, 68, 0.9)' :
+            ledColor === 'green' ? 'rgba(16, 185, 129, 0.9)' :
+            ledColor === 'yellow' ? 'rgba(234, 179, 8, 0.9)' :
+            ledColor === 'blue' ? 'rgba(59, 130, 246, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+
+          const bodyColor =
+            ledColor === 'red' ? '#ef4444' :
+            ledColor === 'green' ? '#10b981' :
+            ledColor === 'yellow' ? '#eab308' :
+            ledColor === 'blue' ? '#3b82f6' : '#ffffff';
+
           if (led.isLit) {
             ctx.save();
             const glowGrad = ctx.createRadialGradient(ledX, ledY, 4, ledX, ledY, 26);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-            glowGrad.addColorStop(0.5, 'rgba(200, 217, 230, 0.5)');
+            glowGrad.addColorStop(0, glowGradColor);
+            glowGrad.addColorStop(0.5, 'rgba(200, 217, 230, 0.4)');
             glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = glowGrad;
             ctx.beginPath();
@@ -459,7 +472,7 @@ export const BreadboardCanvas: React.FC = () => {
             ctx.restore();
           }
 
-          ctx.fillStyle = led.isLit ? '#ffffff' : '#2F4156';
+          ctx.fillStyle = led.isLit ? bodyColor : '#2F4156';
           ctx.beginPath();
           ctx.arc(ledX, ledY, 8, 0, Math.PI * 2);
           ctx.fill();

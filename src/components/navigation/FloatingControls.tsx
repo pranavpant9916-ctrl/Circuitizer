@@ -48,7 +48,7 @@ export const FloatingControls: React.FC = () => {
     <div className="absolute right-4 top-48 z-20 flex flex-col items-end gap-2 pointer-events-auto">
       {/* Layers Menu Popover */}
       {showLayerMenu && (
-        <div className="bg-[#1b2735]/95 backdrop-blur-xl border border-[#567C8D]/40 p-3 rounded-g2 shadow-2xl flex flex-col gap-2 min-w-[180px] animate-in fade-in slide-in-from-right-2 text-[#F5EFEB]">
+        <div className="bg-[#1b2735] border border-[#567C8D]/40 p-3 rounded-g2 shadow-md flex flex-col gap-2 min-w-[180px] text-[#F5EFEB]">
           <div className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6] px-1">
             Visual Layers
           </div>
@@ -100,13 +100,13 @@ export const FloatingControls: React.FC = () => {
         </div>
       )}
 
-      {/* Floating Action Button Pill */}
-      <div className="flex flex-col gap-1.5 bg-[#1b2735]/90 backdrop-blur-xl border border-[#567C8D]/35 p-1.5 rounded-full shadow-2xl">
+      {/* Floating Action Buttons */}
+      <div className="flex flex-col gap-1.5 bg-[#1b2735] border border-[#567C8D]/35 p-1.5 rounded-g2 shadow-md">
         {/* Toggle Probe Mode */}
         <button
           onClick={toggleProbeMode}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-            isProbeMode ? 'bg-[#C8D9E6] text-[#131d27] shadow-md font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
+            isProbeMode ? 'bg-[#C8D9E6] text-[#131d27] shadow-sm font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
           }`}
           title="Multimeter / Logic Probe"
         >
@@ -117,7 +117,7 @@ export const FloatingControls: React.FC = () => {
         <button
           onClick={toggleAnalyzer}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
-            isAnalyzerOpen ? 'bg-[#C8D9E6] text-[#131d27] shadow-md font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
+            isAnalyzerOpen ? 'bg-[#C8D9E6] text-[#131d27] shadow-sm font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
           }`}
           title="Waveform Analyzer / Oscilloscope"
         >
@@ -150,7 +150,7 @@ export const FloatingControls: React.FC = () => {
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
             !isMuted
               ? 'text-[#C8D9E6]/90 hover:bg-[#2F4156] hover:text-white'
-              : 'bg-[#2F4156]/50 text-red-300 hover:bg-[#2F4156]'
+              : 'bg-[#2F4156]/50 text-rose-300 hover:bg-[#2F4156]'
           }`}
           title={isMuted ? 'Unmute Tactile Lab Audio' : 'Mute Tactile Lab Audio'}
         >
