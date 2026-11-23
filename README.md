@@ -37,6 +37,11 @@ With a typical lab ratio of **1 teaching assistant for 40 students**, lab sessio
   * Evaluates single and multi-output systems (e.g. `Sum = A ^ B ^ Cin; Cout = (A*B) + Cin*(A ^ B)`, decoders, full adders) via AST decomposition and parallel truth table generation.
   * Allocates required DIP IC gate slots from real 74xx pin mapping tables and routes separate color-coded indicator LEDs (Green for $Y_1$/Sum, Red for $Y_2$/Cout, Yellow for $Y_3$, Blue for $Y_4$).
   * Compiles complete step-by-step breadboard assembly routes and synchronized multi-channel IEEE 91-1984 logic schematics.
+  * Live synchronized multi-output status dock in the formula bar reflecting parallel logic levels in real time.
+* **Interactive Karnaugh Map (K-Map) Engine & Visualizer**:
+  * Automatically maps truth table outputs into 2, 3, and 4-variable Gray-code matrices ($00, 01, 11, 10$) with full toroidal wrap-around support.
+  * Identifies prime implicant groupings (pairs, quads, octets) with color-coded overlay rectangles and computes the minimal Sum-of-Products (SOP) algebraic equation.
+  * Interactive minterm cells: click any cell in the K-Map to immediately configure the physical breadboard switches.
 * **Purpose-Built Hardware UI (Anti-AI Aesthetics)**:
   * Restrained, tactile industrial workbench interface built with Bookerly serif typography, JetBrains Mono data readouts, and a dark navy/teal hardware color system.
   * Replaces generic floating glassmorphism, glowing gradients, and pill badges with solid instrument deck panels, crisp vector schematics, and clean multimeter HUDs.

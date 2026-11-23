@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
 import { AudioEngine } from '../../engine/audioEngine';
+import { KMapVisualizer } from '../instruments/KMapVisualizer';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -29,6 +30,7 @@ export const StepBottomSheet: React.FC = () => {
   const [showApparatus, setShowApparatus] = useState(false);
   const [showTruthTable, setShowTruthTable] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [tableTab, setTableTab] = useState<'TABLE' | 'KMAP'>('TABLE');
 
   const activeExp = experiments.find((e) => e.id === activeExpId);
   if (!activeExp) return null;
@@ -75,6 +77,30 @@ export const StepBottomSheet: React.FC = () => {
     circuitState.switches.forEach((sw, idx) => {
       if (typeof row[idx] === 'number') {
         const target = row[idx] === 1;
+        if (sw.isClosed !== target) {
+          toggleSwitch(sw.id);
+        }
+      }
+    });
+  };
+
+  // Input mapping for K-Map synchronization
+  const currentSwitchInputs = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    circuitState.switches.forEach((sw) => {
+      map[sw.label] = sw.isClosed ? 1 : 0;
+      map[sw.label.toLowerCase()] = sw.isClosed ? 1 : 0;
+    });
+    return map;
+  }, [circuitState.switches]);
+
+  const applyKMapInputs = (inputVals: Record<string, number>) => {
+    AudioEngine.playRowSelect(true);
+    circuitState.switches.forEach((sw) => {
+      const key = sw.label.toLowerCase();
+      const val = inputVals[key] ?? inputVals[sw.label];
+      if (val !== undefined) {
+        const target = val === 1;
         if (sw.isClosed !== target) {
           toggleSwitch(sw.id);
         }
@@ -339,30 +365,60 @@ export const StepBottomSheet: React.FC = () => {
       {showTruthTable && (
         <div className="fixed inset-0 z-50 bg-[#131d27]/90 flex items-center justify-center p-4">
           <div className="bg-[#1b2735] border border-[#567C8D]/40 rounded-g2-xl w-full max-w-lg p-5 shadow-lg flex flex-col gap-3.5 animate-in fade-in zoom-in-95 text-[#F5EFEB]">
-            <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/20">
+            <div className="flex items-center justify-between pb-3 border-b border-[#567C8D]/20 gap-3 flex-wrap">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40">
+                <div className="w-8 h-8 rounded-full bg-[#2F4156] flex items-center justify-center text-[#C8D9E6] border border-[#567C8D]/40 shrink-0">
                   <FileText className="w-4 h-4 text-[#C8D9E6]" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
-                    <span>Truth Table Simulation</span>
+                    <span>{tableTab === 'TABLE' ? 'Truth Table Simulation' : 'Karnaugh Map (K-Map)'}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-g2-sm bg-[#2F4156] text-[#C8D9E6] font-mono border border-[#567C8D]/40">
                       Live Synced
                     </span>
                   </h3>
                   <p className="text-[11px] text-[#C8D9E6]/80 font-serif">
-                    Click any row to test that input combination on the breadboard and watch the LED respond.
+                    {tableTab === 'TABLE'
+                      ? 'Click any row to test that input combination on the breadboard and watch the LED respond.'
+                      : 'Gray-code minterm matrix with prime implicant groupings for minimal SOP verification.'}
                   </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowTruthTable(false)}
-                className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#C8D9E6] flex items-center justify-center transition border border-[#567C8D]/30"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* View Switcher: Truth Table vs K-Map */}
+                <div className="flex items-center bg-[#131d27] p-1 rounded-g2-sm border border-[#567C8D]/30 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setTableTab('TABLE')}
+                    className={`px-2.5 py-1 rounded-g2-sm text-xs font-medium transition ${
+                      tableTab === 'TABLE'
+                        ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                        : 'text-[#C8D9E6]/70 hover:text-white'
+                    }`}
+                  >
+                    Truth Table
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableTab('KMAP')}
+                    className={`px-2.5 py-1 rounded-g2-sm text-xs font-medium transition ${
+                      tableTab === 'KMAP'
+                        ? 'bg-[#C8D9E6] text-[#131d27] font-semibold shadow-sm'
+                        : 'text-[#C8D9E6]/70 hover:text-white'
+                    }`}
+                  >
+                    K-Map (SOP)
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowTruthTable(false)}
+                  className="w-7 h-7 rounded-full bg-[#2F4156] hover:bg-[#3e546e] text-[#C8D9E6] flex items-center justify-center transition border border-[#567C8D]/30"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Boolean Formula Banner */}
@@ -416,77 +472,88 @@ export const StepBottomSheet: React.FC = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto border border-[#567C8D]/30 rounded-g2 bg-[#131d27]/40">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-[#567C8D]/25 bg-[#2F4156]/40 text-[#C8D9E6] font-mono">
-                    <th className="py-2.5 px-3 font-semibold text-[10px] uppercase">State</th>
-                    {activeExp.truthTable.headers.map((h, i) => (
-                      <th key={i} className="py-2.5 px-3 font-semibold text-[10px] uppercase">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#567C8D]/20 font-mono">
-                  {activeExp.truthTable.rows.map((row, rIdx) => {
-                    const isRowActive =
-                      circuitState.switches.length > 0
-                        ? circuitState.switches.every((sw, idx) => {
-                            if (typeof row[idx] === 'number') {
-                              return (sw.isClosed ? 1 : 0) === row[idx];
-                            }
-                            return true;
-                          })
-                        : false;
-
-                    const rowText = String(row[row.length - 1]);
-                    const rowIsLit =
-                      rowText.includes('1') ||
-                      rowText.includes('ON') ||
-                      rowText.includes('Lit');
-
-                    return (
-                      <tr
-                        key={rIdx}
-                        onClick={() => applyRowInputs(row)}
-                        className={`cursor-pointer transition-all ${
-                          isRowActive
-                            ? 'bg-[#2F4156] text-white font-semibold'
-                            : 'hover:bg-[#2F4156]/40 text-[#C8D9E6]'
-                        }`}
-                      >
-                        {/* LED Simulation Bulb Column — keep rounded-full (visual dot) */}
-                        <td className="py-2.5 px-3 flex items-center gap-2">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full transition-all shrink-0 ${
-                              rowIsLit
-                                ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]'
-                                : 'bg-[#1b2735] border border-[#567C8D]/40'
-                            }`}
-                          />
-                          <span className="text-[10px] font-sans font-medium text-[#C8D9E6]">
-                            {isRowActive ? 'ACTIVE' : `ROW ${rIdx + 1}`}
-                          </span>
-                        </td>
-
-                        {row.map((val, cIdx) => (
-                          <td key={cIdx} className="py-2.5 px-3">
-                            {String(val)}
-                          </td>
+            {/* Content: Truth Table OR K-Map Visualizer */}
+            {tableTab === 'TABLE' ? (
+              <>
+                <div className="overflow-x-auto border border-[#567C8D]/30 rounded-g2 bg-[#131d27]/40">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-[#567C8D]/25 bg-[#2F4156]/40 text-[#C8D9E6] font-mono">
+                        <th className="py-2.5 px-3 font-semibold text-[10px] uppercase">State</th>
+                        {activeExp.truthTable.headers.map((h, i) => (
+                          <th key={i} className="py-2.5 px-3 font-semibold text-[10px] uppercase">
+                            {h}
+                          </th>
                         ))}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#567C8D]/20 font-mono">
+                      {activeExp.truthTable.rows.map((row, rIdx) => {
+                        const isRowActive =
+                          circuitState.switches.length > 0
+                            ? circuitState.switches.every((sw, idx) => {
+                                if (typeof row[idx] === 'number') {
+                                  return (sw.isClosed ? 1 : 0) === row[idx];
+                                }
+                                return true;
+                              })
+                            : false;
 
-            {/* Tip footer — left-aligned */}
-            <div className="text-[10px] text-[#C8D9E6]/70 font-serif text-left pt-1">
-              Tip: Click any row to automatically set the inputs on the breadboard and verify the LED.
-            </div>
+                        const rowText = String(row[row.length - 1]);
+                        const rowIsLit =
+                          rowText.includes('1') ||
+                          rowText.includes('ON') ||
+                          rowText.includes('Lit');
+
+                        return (
+                          <tr
+                            key={rIdx}
+                            onClick={() => applyRowInputs(row)}
+                            className={`cursor-pointer transition-all ${
+                              isRowActive
+                                ? 'bg-[#2F4156] text-white font-semibold'
+                                : 'hover:bg-[#2F4156]/40 text-[#C8D9E6]'
+                            }`}
+                          >
+                            {/* LED Simulation Bulb Column */}
+                            <td className="py-2.5 px-3 flex items-center gap-2">
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full transition-all shrink-0 ${
+                                  rowIsLit
+                                    ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]'
+                                    : 'bg-[#1b2735] border border-[#567C8D]/40'
+                                }`}
+                              />
+                              <span className="text-[10px] font-sans font-medium text-[#C8D9E6]">
+                                {isRowActive ? 'ACTIVE' : `ROW ${rIdx + 1}`}
+                              </span>
+                            </td>
+
+                            {row.map((val, cIdx) => (
+                              <td key={cIdx} className="py-2.5 px-3">
+                                {String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Tip footer */}
+                <div className="text-[10px] text-[#C8D9E6]/70 font-serif text-left pt-1">
+                  Tip: Click any row to automatically set the inputs on the breadboard and verify the LED.
+                </div>
+              </>
+            ) : (
+              <KMapVisualizer
+                headers={activeExp.truthTable.headers}
+                rows={activeExp.truthTable.rows}
+                currentInputs={currentSwitchInputs}
+                onSelectInputs={applyKMapInputs}
+              />
+            )}
           </div>
         </div>
       )}

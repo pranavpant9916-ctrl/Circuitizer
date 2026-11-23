@@ -86,6 +86,27 @@ export const DesmosExpressionBar: React.FC = () => {
   // Compute live output state
   const isAnyLedLit = circuitState.leds.some((l) => l.isLit);
 
+  // Extract output names from current experiment headers
+  const outputNames = React.useMemo(() => {
+    if (!activeExp?.truthTable?.headers) return ['Y1', 'Y2', 'Y3', 'Y4'];
+    const h = activeExp.truthTable.headers;
+    const outputs: string[] = [];
+    h.forEach((header, idx) => {
+      const lower = header.toLowerCase();
+      if (
+        idx >= h.length - (circuitState.leds.length || 1) ||
+        lower.startsWith('y') ||
+        lower.includes('out') ||
+        lower.includes('sum') ||
+        lower.includes('cout') ||
+        lower.includes('carry')
+      ) {
+        outputs.push(header);
+      }
+    });
+    return outputs.length > 0 ? outputs : ['Y1', 'Y2', 'Y3', 'Y4'];
+  }, [activeExp, circuitState.leds.length]);
+
   // Quick operator insertion
   const insertOperator = (op: string) => {
     if (!inputRef.current) return;
@@ -222,32 +243,78 @@ export const DesmosExpressionBar: React.FC = () => {
               })}
             </div>
 
-            {/* Live Circuit Output Indicator */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded-g2-sm bg-[#131d27] border border-[#567C8D]/40 shrink-0">
-              <div className="relative flex items-center justify-center">
-                <div
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                    isAnyLedLit
-                      ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)]'
-                      : 'bg-[#2F4156] border border-[#567C8D]/40'
-                  }`}
-                />
+            {/* Live Circuit Output Indicator(s) */}
+            {circuitState.leds.length > 1 ? (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-wider text-[#C8D9E6]/70">
+                  Outputs:
+                </span>
+                {circuitState.leds.map((led, lIdx) => {
+                  const colorHex =
+                    led.color === 'red' ? '#ef4444' :
+                    led.color === 'green' ? '#10b981' :
+                    led.color === 'yellow' ? '#eab308' :
+                    led.color === 'blue' ? '#3b82f6' : '#ffffff';
+
+                  const label = outputNames[lIdx] || `Y${lIdx + 1}`;
+
+                  return (
+                    <div
+                      key={led.id}
+                      className="flex items-center gap-2 px-2.5 py-1 rounded-g2-sm bg-[#131d27] border border-[#567C8D]/40 shrink-0"
+                    >
+                      <div className="relative flex items-center justify-center">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full transition-all duration-200"
+                          style={{
+                            backgroundColor: led.isLit ? colorHex : '#2F4156',
+                            boxShadow: led.isLit ? `0 0 8px ${colorHex}` : 'none',
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-mono font-bold text-white">
+                        {label}:
+                      </span>
+                      <span
+                        className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded"
+                        style={{
+                          color: led.isLit ? colorHex : '#567C8D',
+                          backgroundColor: '#2F4156',
+                        }}
+                      >
+                        {led.isLit ? '1' : '0'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-g2-sm bg-[#131d27] border border-[#567C8D]/40 shrink-0">
+                <div className="relative flex items-center justify-center">
+                  <div
+                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                      isAnyLedLit
+                        ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,1)]'
+                        : 'bg-[#2F4156] border border-[#567C8D]/40'
+                    }`}
+                  />
+                </div>
 
-              <span className="text-[11px] font-mono font-bold text-white">
-                Output Y: {isAnyLedLit ? '1 (HIGH)' : '0 (LOW)'}
-              </span>
+                <span className="text-[11px] font-mono font-bold text-white">
+                  Output Y: {isAnyLedLit ? '1 (HIGH)' : '0 (LOW)'}
+                </span>
 
-              <span
-                className={`text-[9px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                  isAnyLedLit
-                    ? 'bg-[#C8D9E6] text-[#131d27]'
-                    : 'bg-[#2F4156] text-[#C8D9E6]/70'
-                }`}
-              >
-                {isAnyLedLit ? 'LED LIT' : 'LED DARK'}
-              </span>
-            </div>
+                <span
+                  className={`text-[9px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    isAnyLedLit
+                      ? 'bg-[#C8D9E6] text-[#131d27]'
+                      : 'bg-[#2F4156] text-[#C8D9E6]/70'
+                  }`}
+                >
+                  {isAnyLedLit ? 'LED LIT' : 'LED DARK'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Row: Quick Logic Operator Helper Buttons */}
