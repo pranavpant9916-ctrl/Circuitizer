@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCircuitStore } from '../../store/useCircuitStore';
-import { Activity, Eye, Gauge, Layers, LocateFixed, Minus, Plus, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Activity, Cable, Eye, FileText, Gauge, Layers, LocateFixed, Minus, Plus, Volume2, VolumeX, Zap } from 'lucide-react';
+import { LabReportModal } from './LabReportModal';
 
 export const FloatingControls: React.FC = () => {
   const {
@@ -10,6 +11,8 @@ export const FloatingControls: React.FC = () => {
     toggleLayer,
     isProbeMode,
     toggleProbeMode,
+    isWiringMode,
+    toggleWiringMode,
     isAnalyzerOpen,
     toggleAnalyzer,
     isMuted,
@@ -17,6 +20,7 @@ export const FloatingControls: React.FC = () => {
   } = useCircuitStore();
 
   const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [showLabReport, setShowLabReport] = useState(false);
 
   const handleRecenter = () => {
     const screenW = window.innerWidth;
@@ -102,6 +106,17 @@ export const FloatingControls: React.FC = () => {
 
       {/* Floating Action Buttons */}
       <div className="flex flex-col gap-1.5 bg-[#1b2735] border border-[#567C8D]/35 p-1.5 rounded-g2 shadow-md">
+        {/* Toggle Freeform Wiring Sandbox Tool */}
+        <button
+          onClick={toggleWiringMode}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+            isWiringMode ? 'bg-[#C8D9E6] text-[#131d27] shadow-sm font-bold' : 'text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white'
+          }`}
+          title="Interactive Wiring Sandbox Tool (Click hole to hole)"
+        >
+          <Cable className="w-4 h-4" />
+        </button>
+
         {/* Toggle Probe Mode */}
         <button
           onClick={toggleProbeMode}
@@ -122,6 +137,15 @@ export const FloatingControls: React.FC = () => {
           title="Waveform Analyzer / Oscilloscope"
         >
           <Activity className="w-4 h-4" />
+        </button>
+
+        {/* Open Lab Report & Persistence Modal */}
+        <button
+          onClick={() => setShowLabReport(true)}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-[#C8D9E6]/80 hover:bg-[#2F4156] hover:text-white transition"
+          title="Lab Worksheet & Persistence (Print / PDF / JSON Snapshots)"
+        >
+          <FileText className="w-4 h-4" />
         </button>
 
         {/* Toggle Layers */}
@@ -177,6 +201,9 @@ export const FloatingControls: React.FC = () => {
           <Minus className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Printable Lab Report & Circuit Persistence Modal */}
+      <LabReportModal isOpen={showLabReport} onClose={() => setShowLabReport(false)} />
     </div>
   );
 };

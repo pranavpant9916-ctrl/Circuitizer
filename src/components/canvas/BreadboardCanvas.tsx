@@ -17,6 +17,11 @@ export const BreadboardCanvas: React.FC = () => {
     isProbeMode,
     probedNet,
     probeHole,
+    isWiringMode,
+    wiringStartHole,
+    setWiringStartHole,
+    addCustomWire,
+    selectedWireColor,
   } = useCircuitStore();
 
   const activeExp = experiments.find((e) => e.id === activeExpId);
@@ -25,6 +30,7 @@ export const BreadboardCanvas: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ clientX: number; clientY: number; vpX: number; vpY: number } | null>(null);
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
+  const cursorWorldPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Calculate stationary centered position
   const getStationaryCenter = () => {
@@ -543,6 +549,74 @@ export const BreadboardCanvas: React.FC = () => {
 
           ctx.restore();
         }
+
+        // E. Interactive Wiring Sandbox Preview & Beacon
+        if (isWiringMode && wiringStartHole) {
+          const hStart = defaultGrid.getHole(wiringStartHole);
+          if (hStart) {
+            const pulseScale = 1 + 0.25 * Math.sin(pulseAngle * 2);
+            const startHex = wireColorMap[selectedWireColor] || '#ffffff';
+
+            // Start Hole Halo Beacon
+            ctx.save();
+            ctx.strokeStyle = startHex;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(hStart.x, hStart.y, 12 * pulseScale, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = startHex;
+            ctx.beginPath();
+            ctx.arc(hStart.x, hStart.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Live Rubber-Band Wire Preview
+            if (cursorWorldPosRef.current) {
+              let targetX = cursorWorldPosRef.current.x;
+              let targetY = cursorWorldPosRef.current.y;
+
+              // Snap to nearest target hole if within range
+              const snapHole = defaultGrid.findNearestHole(targetX, targetY, 18);
+              if (snapHole && snapHole.id !== wiringStartHole) {
+                targetX = snapHole.x;
+                targetY = snapHole.y;
+
+                // Target Hole Highlight Ring
+                ctx.strokeStyle = '#F5EFEB';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+              }
+
+              const dx = targetX - hStart.x;
+              const dy = targetY - hStart.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const arch = Math.min(dist * 0.45, 60);
+
+              ctx.strokeStyle = startHex;
+              ctx.lineWidth = 3;
+              ctx.setLineDash([4, 4]);
+              ctx.lineCap = 'round';
+
+              ctx.beginPath();
+              ctx.moveTo(hStart.x, hStart.y);
+              ctx.bezierCurveTo(
+                hStart.x,
+                hStart.y - arch,
+                targetX,
+                targetY - arch,
+                targetX,
+                targetY
+              );
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+            ctx.restore();
+          }
+        }
       }
 
       ctx.restore();
@@ -551,7 +625,7 @@ export const BreadboardCanvas: React.FC = () => {
 
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [viewport, layers, circuitState, currentStepIndex]);
+  }, [viewport, layers, circuitState, currentStepIndex, isWiringMode, wiringStartHole, selectedWireColor]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     lastTouchRef.current = { x: e.clientX, y: e.clientY };
@@ -569,6 +643,13 @@ export const BreadboardCanvas: React.FC = () => {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const curX = (e.clientX - rect.left - viewport.x) / viewport.scale;
+      const curY = (e.clientY - rect.top - viewport.y) / viewport.scale;
+      cursorWorldPosRef.current = { x: curX, y: curY };
+    }
+
     if (!dragStartRef.current) return;
     const dx = e.clientX - dragStartRef.current.clientX;
     const dy = e.clientY - dragStartRef.current.clientY;
@@ -606,10 +687,24 @@ export const BreadboardCanvas: React.FC = () => {
           const worldX = (clickX - viewport.x) / viewport.scale;
           const worldY = (clickY - viewport.y) / viewport.scale;
 
-          const nearest = defaultGrid.findNearestHole(worldX, worldY, 15);
-          setActiveHole(nearest ? nearest.id : null);
-          if (nearest) {
-            probeHole(nearest.id);
+          const nearest = defaultGrid.findNearestHole(worldX, worldY, 18);
+          if (isWiringMode) {
+            if (nearest) {
+              if (!wiringStartHole) {
+                setWiringStartHole(nearest.id);
+              } else if (wiringStartHole === nearest.id) {
+                setWiringStartHole(null);
+              } else {
+                addCustomWire(wiringStartHole, nearest.id, selectedWireColor);
+              }
+            } else {
+              setWiringStartHole(null);
+            }
+          } else {
+            setActiveHole(nearest ? nearest.id : null);
+            if (nearest) {
+              probeHole(nearest.id);
+            }
           }
         }
       }
@@ -647,7 +742,9 @@ export const BreadboardCanvas: React.FC = () => {
       <canvas
         ref={canvasRef}
         className={`w-full h-full block ${
-          isProbeMode
+          isWiringMode
+            ? 'cursor-crosshair'
+            : isProbeMode
             ? 'cursor-crosshair'
             : isDragging
             ? 'cursor-grabbing'
@@ -656,10 +753,14 @@ export const BreadboardCanvas: React.FC = () => {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerLeave={() => {
+          cursorWorldPosRef.current = null;
+        }}
         onPointerCancel={() => {
           dragStartRef.current = null;
           lastTouchRef.current = null;
           setIsDragging(false);
+          cursorWorldPosRef.current = null;
         }}
         onDoubleClick={handleDoubleClick}
         onWheel={handleWheel}

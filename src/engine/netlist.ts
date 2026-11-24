@@ -119,7 +119,7 @@ export class NetlistEngine {
     }
 
     // 3. Inject External Clock Signals
-    for (const [holeId, clkVal] of Object.entries(circuit.clockSignals)) {
+    for (const [holeId, clkVal] of Object.entries(circuit.clockSignals || {})) {
       const netId = holeNetMap.get(holeId);
       if (netId) {
         const net = nets.get(netId);
@@ -164,7 +164,7 @@ export class NetlistEngine {
 
     // 5. Compute power rail presence for each IC
     const icPowered: Record<string, boolean> = {};
-    for (const ic of circuit.placedICs) {
+    for (const ic of circuit.placedICs || []) {
       const def = IC_REGISTRY[ic.model];
       if (!def) continue;
       let hasVCC = false;
@@ -195,13 +195,16 @@ export class NetlistEngine {
     for (let pass = 0; pass < 5; pass++) {
       let stateChanged = false;
 
-      for (const ic of circuit.placedICs) {
+      for (const ic of circuit.placedICs || []) {
         const def = IC_REGISTRY[ic.model];
         if (!def) continue;
+
+        if (!icPinStates[ic.id]) icPinStates[ic.id] = {};
 
         if (!icPowered[ic.id]) {
           // Unpowered IC: force outputs to high‑impedance
           for (const pin of def.pins) {
+            icPinStates[ic.id][pin.pinNumber] = 'Z';
             if (pin.type === 'OUTPUT') {
               const holeId = ic.pinHoles[pin.pinNumber];
               if (holeId) {
@@ -213,8 +216,6 @@ export class NetlistEngine {
           }
           continue;
         }
-
-        if (!icPinStates[ic.id]) icPinStates[ic.id] = {};
 
         const inputs: Record<number, LogicLevel> = {};
         for (const pin of def.pins) {

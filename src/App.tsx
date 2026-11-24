@@ -6,6 +6,7 @@ import { StepBottomSheet } from './components/navigation/StepBottomSheet';
 import { FloatingControls } from './components/navigation/FloatingControls';
 import { LogicAnalyzerDock } from './components/instruments/LogicAnalyzerDock';
 import { ProbeHUD } from './components/instruments/ProbeHUD';
+import { WiringHUD } from './components/instruments/WiringHUD';
 import { LiveReverseLogicBadge } from './components/navigation/LiveReverseLogicBadge';
 import { useCircuitStore } from './store/useCircuitStore';
 
@@ -28,6 +29,9 @@ export const App: React.FC = () => {
 
       {/* 5. Interactive Multimeter & Logic Probe HUD */}
       {viewMode === 'BREADBOARD' && <ProbeHUD />}
+
+      {/* 5b. Interactive Freeform Wiring Sandbox HUD */}
+      {viewMode === 'BREADBOARD' && <WiringHUD />}
 
       {/* 5. Live Waveform Analyzer & Clock Dock */}
       <LogicAnalyzerDock />

@@ -93,6 +93,20 @@ interface CircuitStoreState {
   toggleProbeMode: () => void;
   probeHole: (holeId: string | null) => void;
 
+  // Freeform Interactive Wiring Sandbox
+  isWiringMode: boolean;
+  wiringStartHole: string | null;
+  selectedWireColor: JumperWire['color'];
+  toggleWiringMode: () => void;
+  setWiringStartHole: (holeId: string | null) => void;
+  setSelectedWireColor: (color: JumperWire['color']) => void;
+  addCustomWire: (fromHole: string, toHole: string, color?: JumperWire['color']) => void;
+  removeWire: (wireId: string) => void;
+
+  // Circuit Persistence & Snapshot
+  saveCircuitSnapshot: (name: string) => void;
+  loadCircuitSnapshot: (snapshotJson: string) => void;
+
   // View toggle action
   setViewMode: (mode: 'BREADBOARD' | 'BOOLEAN_DIAGRAM') => void;
   toggleViewMode: () => void;
@@ -180,6 +194,10 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
 
     isProbeMode: false,
     probedNet: null,
+
+    isWiringMode: false,
+    wiringStartHole: null,
+    selectedWireColor: 'red',
 
     circuitState: initialCircuit,
 
@@ -379,8 +397,93 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => {
       const next = !get().isProbeMode;
       set({
         isProbeMode: next,
+        isWiringMode: next ? false : get().isWiringMode,
+        wiringStartHole: null,
         probedNet: next ? get().probedNet : null,
       });
+    },
+
+    toggleWiringMode: () => {
+      set((state) => {
+        const next = !state.isWiringMode;
+        return {
+          isWiringMode: next,
+          isProbeMode: next ? false : state.isProbeMode,
+          wiringStartHole: null,
+          probedNet: null,
+        };
+      });
+    },
+
+    setWiringStartHole: (holeId) => set({ wiringStartHole: holeId }),
+    setSelectedWireColor: (color) => set({ selectedWireColor: color }),
+
+    addCustomWire: (fromHole, toHole, color) => {
+      const { circuitState, selectedWireColor } = get();
+      if (!fromHole || !toHole || fromHole === toHole) return;
+
+      const wireColor = color || selectedWireColor;
+      const newWire: JumperWire = {
+        id: `wire-custom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        fromHole,
+        toHole,
+        color: wireColor,
+      };
+
+      AudioEngine.playWireInsert();
+
+      set({
+        circuitState: {
+          ...circuitState,
+          wires: [...circuitState.wires, newWire],
+        },
+        wiringStartHole: null,
+      });
+
+      get().runSimTick();
+    },
+
+    removeWire: (wireId) => {
+      const { circuitState } = get();
+      const updatedWires = circuitState.wires.filter((w) => w.id !== wireId);
+      AudioEngine.playWireInsert();
+      set({
+        circuitState: {
+          ...circuitState,
+          wires: updatedWires,
+        },
+      });
+      get().runSimTick();
+    },
+
+    saveCircuitSnapshot: (name: string) => {
+      try {
+        const { circuitState, activeExpId } = get();
+        const existing = JSON.parse(localStorage.getItem('circuitizer_saved_circuits') || '{}');
+        existing[name] = {
+          name,
+          savedAt: new Date().toISOString(),
+          activeExpId,
+          circuitState,
+        };
+        localStorage.setItem('circuitizer_saved_circuits', JSON.stringify(existing));
+      } catch (err) {
+        console.error('Failed to save circuit snapshot:', err);
+      }
+    },
+
+    loadCircuitSnapshot: (snapshotJson: string) => {
+      try {
+        const data = JSON.parse(snapshotJson);
+        const stateToLoad = data.circuitState || data;
+        set({
+          circuitState: stateToLoad,
+          activeExpId: data.activeExpId || get().activeExpId,
+        });
+        get().runSimTick();
+      } catch (err) {
+        console.error('Failed to load circuit snapshot:', err);
+      }
     },
 
     probeHole: (holeId: string | null) => {
