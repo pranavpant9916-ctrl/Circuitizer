@@ -15,40 +15,22 @@ export const KMapVisualizer: React.FC<KMapVisualizerProps> = ({
   currentInputs,
   onSelectInputs,
 }) => {
-  // Detect available output columns
-  const outputOptions = useMemo(() => {
-    const list: string[] = [];
-    headers.forEach((h, idx) => {
-      const lower = h.toLowerCase();
-      // Any header at the end or named Y, OUT, SUM, COUT, etc.
-      if (
-        idx >= headers.length - 2 ||
-        lower.startsWith('y') ||
-        lower.includes('out') ||
-        lower.includes('sum') ||
-        lower.includes('cout') ||
-        lower.includes('carry')
-      ) {
-        list.push(h);
-      }
-    });
-    return list.length > 0 ? list : [headers[headers.length - 1]];
-  }, [headers]);
-
-  const [selectedOutput, setSelectedOutput] = useState<string>(outputOptions[0]);
+  const [selectedOutput, setSelectedOutput] = useState<string>('');
 
   // Compute K-Map data
   const kmap: KMapData | null = useMemo(() => {
-    return KMapEngine.generateKMap(headers, rows, selectedOutput);
+    return KMapEngine.generateKMap(headers, rows, selectedOutput || undefined);
   }, [headers, rows, selectedOutput]);
 
   if (!kmap) {
     return (
-      <div className="p-4 bg-[#131d27]/70 border border-[#567C8D]/30 rounded-g2 text-center text-xs text-[#C8D9E6]/70 font-serif">
-        K-Map visualization requires between 2 and 4 input variables. The current experiment has {headers.length - 1} inputs.
+      <div className="p-4 bg-[#131d27]/70 border border-[#567C8D]/30 rounded-g2-sm text-center text-xs text-[#C8D9E6]/70 font-serif leading-relaxed">
+        K-Map minimization is available for combinational logic circuits with 2 to 4 inputs. Switch to the Truth Table tab to view all state rows.
       </div>
     );
   }
+
+  const activeOutputName = kmap.targetOutputName;
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,20 +41,23 @@ export const KMapVisualizer: React.FC<KMapVisualizerProps> = ({
             Target Output:
           </span>
           <div className="flex items-center gap-1.5">
-            {outputOptions.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setSelectedOutput(opt)}
-                className={`px-2.5 py-1 rounded-g2-sm text-xs font-mono font-semibold transition border ${
-                  selectedOutput === opt
-                    ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6]'
-                    : 'bg-[#2F4156] text-[#C8D9E6] border-[#567C8D]/40 hover:bg-[#3e546e]'
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
+            {kmap.availableOutputs.map((opt) => {
+              const isSelected = opt.clean === activeOutputName || opt.raw === selectedOutput;
+              return (
+                <button
+                  key={opt.raw}
+                  type="button"
+                  onClick={() => setSelectedOutput(opt.clean)}
+                  className={`px-2.5 py-1 rounded-g2-sm text-xs font-mono font-semibold transition border ${
+                    isSelected
+                      ? 'bg-[#C8D9E6] text-[#131d27] border-[#C8D9E6]'
+                      : 'bg-[#2F4156] text-[#C8D9E6] border-[#567C8D]/40 hover:bg-[#3e546e]'
+                  }`}
+                >
+                  {opt.clean}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -90,7 +75,7 @@ export const KMapVisualizer: React.FC<KMapVisualizerProps> = ({
           </span>
         </div>
         <div className="text-xs font-mono font-bold text-white bg-[#2F4156] px-3 py-1 rounded border border-[#567C8D]/40">
-          {selectedOutput} = {kmap.minimizedSOP}
+          {activeOutputName} = {kmap.minimizedSOP}
         </div>
       </div>
 
@@ -126,7 +111,10 @@ export const KMapVisualizer: React.FC<KMapVisualizerProps> = ({
                     // Check if current physical switches match this cell
                     const isActive = Object.entries(cell.inputValues).every(
                       ([varName, expectedVal]) => {
-                        const cur = currentInputs[varName.toLowerCase()] ?? currentInputs[varName];
+                        const cur =
+                          currentInputs[varName] ??
+                          currentInputs[varName.toLowerCase()] ??
+                          currentInputs[`input ${varName.toLowerCase()}`];
                         return cur === expectedVal;
                       }
                     );
@@ -159,9 +147,7 @@ export const KMapVisualizer: React.FC<KMapVisualizerProps> = ({
                         <div className="flex items-center justify-center pt-2">
                           <span
                             className={`text-sm font-bold transition-transform ${
-                              cell.value === 1
-                                ? 'text-white'
-                                : 'text-[#567C8D]'
+                              cell.value === 1 ? 'text-white' : 'text-[#567C8D]'
                             }`}
                           >
                             {cell.value}

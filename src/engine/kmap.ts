@@ -9,7 +9,7 @@ export interface KMapCell {
   col: number;
   minterm: number;
   binaryString: string;
-  value: 0 | 1 | 'X';
+  value: 0 | 1;
   inputValues: Record<string, number>;
 }
 
@@ -32,6 +32,8 @@ export interface KMapData {
   groups: KMapGroup[];
   minimizedSOP: string;
   minterms: number[];
+  targetOutputName: string;
+  availableOutputs: { raw: string; clean: string }[];
 }
 
 // Standard Gray code sequences
@@ -47,12 +49,61 @@ const GROUP_COLORS = [
   '#f87171', // red-400
 ];
 
+export function isStatusOrDescriptionColumn(header: string): boolean {
+  const s = header.toLowerCase().trim();
+  return (
+    s.includes('state') ||
+    s.includes('status') ||
+    s.includes('count') ||
+    s.includes('digit') ||
+    s.includes('voltage') ||
+    s.includes('decimal') ||
+    s.includes('time') ||
+    s.includes('clock')
+  );
+}
+
+export function cleanVarName(header: string): string {
+  let s = header.trim().replace(/^input\s+/i, '');
+  if (s.toLowerCase().startsWith('gate')) {
+    const m = s.match(/\b([A-Za-z]\w*)\s*=/);
+    if (m) return m[1];
+  }
+  const paren = s.indexOf('(');
+  if (paren !== -1) {
+    const prefix = s.substring(0, paren).trim();
+    if (prefix) return prefix;
+  }
+  return s;
+}
+
+export function cleanOutputName(header: string): string {
+  let s = header.trim().replace(/^output\s+/i, '');
+  const paren = s.indexOf('(');
+  if (paren !== -1) {
+    const prefix = s.substring(0, paren).trim();
+    if (prefix) return prefix;
+  }
+  return s;
+}
+
+export function parseBinaryOutput(rawVal: string | number): 0 | 1 {
+  if (typeof rawVal === 'number') {
+    return rawVal === 1 ? 1 : 0;
+  }
+  const s = String(rawVal).toLowerCase().trim();
+  if (s === '1' || s.startsWith('on') || s.startsWith('high') || s.includes('lit') || s === 'true') {
+    return 1;
+  }
+  return 0;
+}
+
 export class KMapEngine {
   /**
    * Builds a full K-Map model from truth table headers and rows
-   * @param headers Table column headers (e.g. ['A', 'B', 'Cin', 'Sum', 'Cout'])
+   * @param headers Table column headers (e.g. ['Input A', 'Input B', 'Output Y', 'LED State'])
    * @param rows Table rows of numbers / strings
-   * @param targetOutputHeader Optional name of output column to analyze (defaults to last column)
+   * @param targetOutputHeader Optional name of output column to analyze (raw or clean)
    */
   public static generateKMap(
     headers: string[],
@@ -63,53 +114,82 @@ export class KMapEngine {
       return null;
     }
 
-    // Identify output column index
-    let outputColIdx = headers.length - 1;
-    if (targetOutputHeader) {
-      const idx = headers.indexOf(targetOutputHeader);
-      if (idx !== -1) outputColIdx = idx;
-    }
+    // 1. Filter out descriptive status columns
+    const validCols = headers
+      .map((h, idx) => ({ h, idx }))
+      .filter((c) => !isStatusOrDescriptionColumn(c.h));
 
-    // Input variables are all columns prior to output columns
-    // Any column containing 'out', 'sum', 'cout', 'y', etc. at the end is an output
-    const inputVarIndices: number[] = [];
-    for (let i = 0; i < headers.length; i++) {
-      if (i !== outputColIdx) {
-        // If header looks like an output and is after other inputs, skip if not target
-        const h = headers[i].toLowerCase();
-        if (i >= headers.length - 2 && (h.includes('y') || h.includes('out') || h.includes('sum') || h.includes('cout') || h.includes('carry'))) {
-          continue;
-        }
-        inputVarIndices.push(i);
-      }
-    }
-
-    const inputVars = inputVarIndices.map((i) => headers[i]);
-    const numVars = inputVars.length;
-
-    if (numVars < 2 || numVars > 4) {
-      // K-Maps traditionally visualize 2, 3, or 4 variables clearly
+    if (validCols.length < 3) {
       return null;
     }
 
-    // Build minterm lookup map from truth table
+    // 2. Identify candidate output columns
+    const outputCols = validCols.filter((c) => {
+      const lower = c.h.toLowerCase();
+      return (
+        lower.startsWith('y') ||
+        lower.includes('out') ||
+        lower.includes('sum') ||
+        lower.includes('cout') ||
+        lower.includes('carry') ||
+        c.idx === validCols[validCols.length - 1].idx
+      );
+    });
+
+    if (outputCols.length === 0) {
+      return null;
+    }
+
+    const availableOutputs = outputCols.map((c) => ({
+      raw: c.h,
+      clean: cleanOutputName(c.h),
+    }));
+
+    // Select the target output column
+    let selectedCol = outputCols[0];
+    if (targetOutputHeader) {
+      const targetMatch = outputCols.find(
+        (c) =>
+          c.h === targetOutputHeader ||
+          cleanOutputName(c.h) === targetOutputHeader ||
+          cleanOutputName(c.h).toLowerCase() === targetOutputHeader.toLowerCase()
+      );
+      if (targetMatch) {
+        selectedCol = targetMatch;
+      }
+    }
+
+    const outputColIdx = selectedCol.idx;
+    const targetOutputName = cleanOutputName(selectedCol.h);
+
+    // 3. Identify input columns (all valid columns except output columns)
+    const outputIndices = new Set(outputCols.map((c) => c.idx));
+    const inputCols = validCols.filter((c) => !outputIndices.has(c.idx));
+
+    if (inputCols.length < 2 || inputCols.length > 4) {
+      return null;
+    }
+
+    const numVars = inputCols.length;
+    const inputVars = inputCols.map((c) => cleanVarName(c.h));
+
+    // 4. Build minterm map
     const mintermMap = new Map<number, { val: 0 | 1; inputs: Record<string, number> }>();
     const mintermList: number[] = [];
 
     rows.forEach((row) => {
       let m = 0;
       const inputs: Record<string, number> = {};
-      inputVarIndices.forEach((colIdx) => {
-        const raw = Number(row[colIdx]);
+      inputCols.forEach((col, bitPos) => {
+        const raw = Number(row[col.idx]);
         const bit = isNaN(raw) ? 0 : raw ? 1 : 0;
         m = (m << 1) | bit;
-        inputs[headers[colIdx]] = bit;
+        const cleanName = inputVars[bitPos];
+        inputs[cleanName] = bit;
+        inputs[col.h] = bit;
       });
 
-      const outRaw = String(row[outputColIdx]);
-      const outVal: 0 | 1 =
-        outRaw === '1' || outRaw.toLowerCase() === 'high' || outRaw.toLowerCase() === 'on' ? 1 : 0;
-
+      const outVal = parseBinaryOutput(row[outputColIdx]);
       mintermMap.set(m, { val: outVal, inputs });
       if (outVal === 1) {
         mintermList.push(m);
@@ -122,19 +202,16 @@ export class KMapEngine {
     let colHeaders: string[] = [];
 
     if (numVars === 2) {
-      // 2 variables: A (row), B (col) -> 2x2
       rowVars = [inputVars[0]];
       colVars = [inputVars[1]];
       rowHeaders = GRAY_2;
       colHeaders = GRAY_2;
     } else if (numVars === 3) {
-      // 3 variables: A (row), BC (col) -> 2x4
       rowVars = [inputVars[0]];
       colVars = [inputVars[1], inputVars[2]];
       rowHeaders = GRAY_2;
       colHeaders = GRAY_4;
     } else {
-      // 4 variables: AB (row), CD (col) -> 4x4
       rowVars = [inputVars[0], inputVars[1]];
       colVars = [inputVars[2], inputVars[3]];
       rowHeaders = GRAY_4;
@@ -155,7 +232,6 @@ export class KMapEngine {
         const entry = mintermMap.get(minterm);
         const val = entry ? entry.val : 0;
 
-        // Construct input values dictionary
         const inputVals: Record<string, number> = {};
         let bitIdx = 0;
         rowVars.forEach((v) => {
@@ -178,7 +254,7 @@ export class KMapEngine {
       grid.push(gridRow);
     }
 
-    // Compute prime implicant grouping rectangles
+    // 5. Compute prime implicant grouping rectangles
     const groups = this.findGroups(grid, rowVars, colVars, rowHeaders, colHeaders);
 
     // Compute minimized SOP
@@ -197,6 +273,8 @@ export class KMapEngine {
       groups,
       minimizedSOP,
       minterms: mintermList.sort((a, b) => a - b),
+      targetOutputName,
+      availableOutputs,
     };
   }
 
@@ -213,7 +291,6 @@ export class KMapEngine {
     const numRows = grid.length;
     const numCols = grid[0].length;
 
-    // List all 1-cells
     const ones: { r: number; c: number; minterm: number }[] = [];
     for (let r = 0; r < numRows; r++) {
       for (let c = 0; c < numCols; c++) {
@@ -237,7 +314,6 @@ export class KMapEngine {
       ];
     }
 
-    // Possible rectangle sizes: height x width (powers of 2 <= dimensions)
     const validSizes: [number, number][] = [];
     const rowSizes = numRows === 4 ? [4, 2, 1] : numRows === 2 ? [2, 1] : [1];
     const colSizes = numCols === 4 ? [4, 2, 1] : numCols === 2 ? [2, 1] : [1];
@@ -247,7 +323,6 @@ export class KMapEngine {
         validSizes.push([h, w]);
       }
     }
-    // Sort descending by area to find largest groups first
     validSizes.sort((a, b) => b[0] * b[1] - a[0] * a[1]);
 
     const potentialGroups: {
@@ -258,7 +333,6 @@ export class KMapEngine {
       size: number;
     }[] = [];
 
-    // Find all valid rectangular groups with wrap-around
     for (const [h, w] of validSizes) {
       for (let rStart = 0; rStart < numRows; rStart++) {
         for (let cStart = 0; cStart < numCols; cStart++) {
@@ -271,7 +345,6 @@ export class KMapEngine {
             colIndices.push((cStart + j) % numCols);
           }
 
-          // Check if every cell in this rectangle is 1
           let allOnes = true;
           const groupCells: { r: number; c: number; minterm: number }[] = [];
 
@@ -287,13 +360,11 @@ export class KMapEngine {
           }
 
           if (allOnes) {
-            // Deduplicate indices
             const uniqueRows = Array.from(new Set(rowIndices)).sort((a, b) => a - b);
             const uniqueCols = Array.from(new Set(colIndices)).sort((a, b) => a - b);
 
             const term = this.deriveTerm(uniqueRows, uniqueCols, rowVars, colVars, rowHeaders, colHeaders);
 
-            // Avoid duplicate groups
             const key = `${uniqueRows.join(',')}|${uniqueCols.join(',')}`;
             if (!potentialGroups.some((g) => `${g.rows.join(',')}|${g.cols.join(',')}` === key)) {
               potentialGroups.push({
@@ -309,7 +380,6 @@ export class KMapEngine {
       }
     }
 
-    // Greedy cover of all 1s with minimal prime implicants
     const uncovered = new Set<number>(ones.map((o) => o.minterm));
     const selectedGroups: KMapGroup[] = [];
     let colorIdx = 0;
@@ -334,9 +404,6 @@ export class KMapEngine {
     return selectedGroups;
   }
 
-  /**
-   * Derives minimal algebraic product term for a group of row and column indices
-   */
   private static deriveTerm(
     rows: number[],
     cols: number[],
@@ -347,7 +414,6 @@ export class KMapEngine {
   ): string {
     const terms: string[] = [];
 
-    // Analyze row variables
     rowVars.forEach((v, bitIdx) => {
       let isConstant = true;
       const firstBit = rowHeaders[rows[0]][bitIdx];
@@ -362,7 +428,6 @@ export class KMapEngine {
       }
     });
 
-    // Analyze col variables
     colVars.forEach((v, bitIdx) => {
       let isConstant = true;
       const firstBit = colHeaders[cols[0]][bitIdx];
