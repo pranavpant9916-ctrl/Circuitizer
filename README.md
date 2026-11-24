@@ -134,3 +134,13 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 npm run build
 npm run preview
 ```
+
+## Updated Features (2024‑2025)
+
+- **Interactive Wiring Sandbox**: Toggle wiring mode, choose from a palette of wire colors, undo actions, and see live visual feedback on the breadboard. Implements free‑form hole‑to‑hole connections with snapping and a rubber‑band preview.
+- **Lab Worksheet Modal**: Accessible from the floating control bar, the modal captures student metadata, auto‑generates a Bill‑of‑Materials, displays the truth‑table and Karnaugh‑Map, and supports JSON snapshot export / import. Includes a one‑click **Print / PDF** button that formats the worksheet for offline submission.
+- **Multi‑Output Indicator Dock**: The formula bar now shows live output chips (Y₁ 🟢, Y₂ 🔴, Y₃ 🟡, Y₄ 🔵) for experiments with several outputs, keeping the UI in sync with breadboard LEDs.
+- **Vitest Regression Suite**: Comprehensive unit‑tests for the Boolean compiler, K‑Map generator, and netlist solver. Run with `npm test`; the suite is included in CI and guarantees zero TypeScript errors.
+- **Design System Compliance**: All new UI respects the anti‑AI visual language – solid colour palette (`#131d27`, `#1b2735`, `#2F4156`, `#567C8D`, `#C8D9E6`, `#F5EFEB`), Bookerly serif headings, JetBrains Mono for code, and no gradients, glass‑morphism, or pill‑shaped buttons.
+
+These additions retain the original functional scope while improving usability, traceability, and educational value.
